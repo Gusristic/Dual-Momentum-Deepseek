@@ -50,6 +50,12 @@ TICKERS = {
         "role": "Small Cap",
         "isin": "IE00B42W3S00",
     },
+        # ─── Benchmark ──────────────────────────────────────────
+    "IWDA.AS": {
+        "name": "iShares Core MSCI World UCITS ETF (benchmark)",
+        "role": "Benchmark",
+        "isin": "IE00B4L5Y983",
+    },
     # ─── Cash (fondo monetario) ─────────────────────────────
     "0P00000F24.F": {
         "name": "AXA Trésor Court Terme C",
