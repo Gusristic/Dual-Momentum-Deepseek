@@ -29,8 +29,7 @@
 </div>
 <script>
 const MODEL_H={w12:0.5,w6:0.3,w3:0.2,threshold:0.005,cashTicker:"XEON.DE"};
-const RISK=["SPY","IWDA.AS","EEM","AGGH.MI","IGLN.L"],CASH="XEON.DE";
-let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
+const RISK=["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","IE00B42W3S00.IR"],CASH="0P00000F24.F";let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
 async function loadData(){document.getElementById("meta").textContent="Cargando datos…";
 try{const r=await fetch("data/prices.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);
 RAW=await r.json();MONTHLY=RAW.data;
