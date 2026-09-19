@@ -1,0 +1,99 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dual Momentum</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}.nav.active{background:#eef2ff;color:#4338ca;font-weight:600}</style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+<div class="flex min-h-screen">
+  <aside class="w-64 bg-white border-r flex flex-col">
+    <div class="p-4 border-b"><h1 class="text-lg font-bold">Dual Momentum</h1><p class="text-xs text-gray-500">Datos reales · Yahoo Finance</p></div>
+    <nav class="flex-1 p-3 space-y-1">
+      <button data-nav="signal" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">📡 Señal Hoy</button>
+      <button data-nav="backtest" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">📊 Backtest</button>
+      <button data-nav="allocation" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">📅 Asignación</button>
+      <button data-nav="correlations" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">🔲 Correlaciones</button>
+      <button data-nav="tax" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">🏛️ Fiscalidad</button>
+      <button data-nav="data" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">💾 Datos</button>
+    </nav>
+    <div id="meta" class="p-3 border-t text-xs text-gray-500">Cargando…</div>
+  </aside>
+  <div class="flex-1 flex flex-col">
+    <div class="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900"><strong>Aviso:</strong> uso educativo. No es asesoramiento financiero ni fiscal.</div>
+    <main id="main" class="flex-1 p-6 overflow-auto"></main>
+  </div>
+</div>
+<script>
+const MODEL_H={w12:0.5,w6:0.3,w3:0.2,threshold:0.005,cashTicker:"XEON.DE"};
+const RISK=["SPY","IWDA.AS","EEM","AGGH.MI","IGLN.L"],CASH="XEON.DE";
+let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
+async function loadData(){document.getElementById("meta").textContent="Cargando datos…";
+try{const r=await fetch("data/prices.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);
+RAW=await r.json();MONTHLY=RAW.data;
+const w=RAW.generated_at?new Date(RAW.generated_at).toLocaleString("es-ES"):"—";
+document.getElementById("meta").innerHTML=Object.keys(RAW.data).length+" instrumentos<br>Actualizado: "+w;
+show("signal");}catch(e){document.getElementById("meta").textContent="Error: "+e.message;
+main.innerHTML='<div class="p-6 bg-red-50 text-red-800 rounded"><strong>No se han podido cargar los datos.</strong><p class="mt-2 text-sm">Si es la primera vez, entra a la pestaña Actions del repositorio y ejecuta "Update market data" manualmente.</p><p class="mt-2 text-xs">Detalle: '+e.message+'</p></div>';}}
+function momentum(t,i,w){const s=MONTHLY[t];if(!s||i-w<0)return null;const p0=s.close[i-w],p1=s.close[i];if(!p0||!p1)return null;return p1/p0-1;}
+function computeSignals(){const cash=MONTHLY[CASH];if(!cash)return [];const N=cash.close.length;const sig=[];let cur=null;
+for(let i=12;i<N;i++){const c12=momentum(CASH,i,12),c6=momentum(CASH,i,6),c3=momentum(CASH,i,3);if(c12==null)continue;
+const cands=[];for(const t of RISK){const r12=momentum(t,i,12),r6=momentum(t,i,6),r3=momentum(t,i,3);if(r12==null)continue;
+const passes=r12>c12&&r6>c6&&r3>c3;const M=MODEL_H.w12*r12+MODEL_H.w6*r6+MODEL_H.w3*r3;cands.push({ticker:t,r12,r6,r3,M,passes});}
+const elig=cands.filter(c=>c.passes);let tgt=null;if(elig.length){elig.sort((a,b)=>b.M-a.M);tgt=elig[0].ticker;}
+let nc=cur;if(cur===null)nc=tgt;else if(tgt===null)nc=null;else if(tgt===cur)nc=cur;else{const cM=cands.find(c=>c.ticker===cur)?.M??-Infinity,tM=cands.find(c=>c.ticker===tgt)?.M??-Infinity;nc=(tM-cM>MODEL_H.threshold)?tgt:cur;}cur=nc;
+sig.push({date:cash.dates[i].slice(0,7),month_index:i,current:cur,candidates:cands,cashR12:c12,cashR6:c6,cashR3:c3});}return sig;}
+function renderSignal(){const sig=computeSignals();if(!sig.length)return "<p>Datos insuficientes.</p>";const last=sig[sig.length-1];
+const label=t=>t===null?(RAW.data[CASH]?.meta?.name||"Cash"):(RAW.data[t]?.meta?.name||t);
+const wins=[["r12","12M",last.cashR12],["r6","6M",last.cashR6],["r3","3M",last.cashR3]].map(([k,l,cr])=>{const top=last.candidates.find(c=>c.ticker===last.current)||last.candidates[0];if(!top)return null;return {w:l,a:top[k],c:cr,p:top[k]>cr};}).filter(Boolean);
+return '<h1 class="text-2xl font-bold mb-1">Señal Hoy</h1><p class="text-sm text-gray-500 mb-6">Modelo H · Equilibrado 12M/6M/3M · Datos a '+last.date+'</p>'+
+'<div class="mb-4 p-4 rounded border '+(last.current===null?'bg-red-50 border-red-300':'bg-green-50 border-green-300')+'"><div class="font-semibold">Destino: '+label(last.current)+'</div><p class="text-sm mt-1">'+(last.current===null?"Ningún activo supera el filtro. Cartera 100% cash.":"Activo con mayor momentum compuesto que pasa el filtro estricto.")+'</p></div>'+
+'<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">'+last.candidates.map(c=>'<div class="bg-white rounded border p-4 '+(c.ticker===last.current?'ring-2 ring-indigo-500':'')+'"><div class="text-xs text-gray-500">'+(RAW.data[c.ticker]?.meta?.role||"")+'</div><div class="font-medium">'+label(c.ticker)+'</div><div class="text-xs font-mono text-gray-500">'+c.ticker+'</div><div class="text-2xl font-bold mt-2">'+(c.M*100).toFixed(2)+' %</div><div class="text-xs text-gray-500">momentum compuesto</div><div class="mt-2 text-xs">'+(c.passes?'<span class="text-green-700 font-medium">✓ Pasa filtro</span>':'<span class="text-red-600 font-medium">✗ No pasa filtro</span>')+'</div></div>').join("")+'</div>'+
+(wins.length?'<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Desglose por ventana — activo seleccionado</h3>'+wins.map(w=>'<div class="flex items-center gap-4 py-2"><span class="w-10 font-mono text-sm">'+w.w+'</span><div class="flex-1"><div class="h-6 bg-gray-100 rounded overflow-hidden relative"><div class="h-full '+(w.p?'bg-green-500':'bg-red-500')+'" style="width:'+Math.max(5,Math.min(100,w.a*500))+'%"></div></div></div><span class="text-xs w-40 text-right">activo '+(w.a*100).toFixed(2)+' % · cash '+(w.c*100).toFixed(2)+' %</span><span class="text-xs font-medium w-6 '+(w.p?'text-green-700':'text-red-600')+'">'+(w.p?'✓':'✗')+'</span></div>').join("")+'</div>':"");}
+function renderBacktest(){const sig=computeSignals();if(sig.length<2)return "<p>Datos insuficientes.</p>";
+let eq=1;const ser=[{m:sig[0].date,v:1}];for(let i=1;i<sig.length;i++){const p=sig[i-1],c=sig[i];const a=p.current??CASH;const p0=MONTHLY[a].close[p.month_index],p1=MONTHLY[a].close[c.month_index];const r=p0&&p1?(p1/p0-1):0;eq*=(1+r);ser.push({m:c.date,v:eq});}
+const rets=[];for(let i=1;i<ser.length;i++)rets.push(ser[i].v/ser[i-1].v-1);
+const mean=rets.reduce((a,b)=>a+b,0)/rets.length;const varr=rets.reduce((a,b)=>a+(b-mean)**2,0)/rets.length;const vol=Math.sqrt(varr)*Math.sqrt(12);
+const cagr=Math.pow(eq,12/rets.length)-1;const sharpe=vol>0?(mean*12)/vol:0;
+let peak=1,mdd=0;for(const s of ser){if(s.v>peak)peak=s.v;const dd=(s.v-peak)/peak;if(dd<mdd)mdd=dd;}
+const pos=rets.filter(r=>r>0).length/rets.length;
+setTimeout(()=>drawEq(ser),0);
+return '<h1 class="text-2xl font-bold mb-1">Backtest — Modelo H</h1><p class="text-sm text-gray-500 mb-6">Período: '+ser[0].m+' → '+ser[ser.length-1].m+' · '+ser.length+' meses</p>'+
+'<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">'+[["CAGR",(cagr*100).toFixed(2)+" %"],["Volatilidad",(vol*100).toFixed(2)+" %"],["Sharpe",sharpe.toFixed(2)],["Max Drawdown",(mdd*100).toFixed(2)+" %"],["Retorno total",((eq-1)*100).toFixed(2)+" %"],["% positivos",(pos*100).toFixed(1)+" %"],["Meses",ser.length],["Ratio ret/DD",mdd!==0?(cagr/Math.abs(mdd)).toFixed(2):"—"]].map(m=>'<div class="bg-white rounded border p-4"><div class="text-xs text-gray-500">'+m[0]+'</div><div class="text-xl font-bold mt-1">'+m[1]+'</div></div>').join("")+'</div>'+
+'<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Curva de equity (base 1.00)</h3><canvas id="eq" height="100"></canvas></div>';}
+function drawEq(ser){const c=document.getElementById("eq");if(!c)return;if(chartRef)chartRef.destroy();
+chartRef=new Chart(c,{type:"line",data:{labels:ser.map(s=>s.m),datasets:[{label:"Equity",data:ser.map(s=>s.v),borderColor:"#4338ca",backgroundColor:"rgba(67,56,202,0.1)",borderWidth:2,pointRadius:0,tension:0.15,fill:true}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:10}}},y:{grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:10}}}}}});}
+function renderAllocation(){const sig=computeSignals();if(sig.length<2)return "<p>Datos insuficientes.</p>";
+const rec=sig.slice(-60);const tick=[...RISK,CASH];
+const col={"SPY":"#4338ca","IWDA.AS":"#0891b2","EEM":"#7c3aed","AGGH.MI":"#16a34a","IGLN.L":"#ca8a04","XEON.DE":"#9ca3af"};
+return '<h1 class="text-2xl font-bold mb-1">Asignación histórica</h1><p class="text-sm text-gray-500 mb-6">Últimos '+rec.length+' meses · Modelo H</p>'+
+'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th class="text-left px-2 py-1">Activo</th>'+rec.map(s=>'<th class="px-0.5 py-1 font-normal text-gray-500" style="writing-mode:vertical-rl;height:50px">'+s.date+'</th>').join("")+'</tr></thead><tbody>'+
+tick.map(t=>'<tr><td class="px-2 py-1 font-mono font-semibold whitespace-nowrap">'+t+'</td>'+rec.map(s=>{const a=(s.current??CASH)===t;return '<td class="px-0.5 py-0.5"><div class="w-4 h-4 rounded-sm" style="background:'+(a?col[t]:"#f3f4f6")+'" title="'+s.date+' · '+t+'"></div></td>';}).join("")+'</tr>').join("")+'</tbody></table></div>';}
+function renderCorrelations(){const tick=RISK;const rets={};
+for(const t of tick){const s=MONTHLY[t];const a=[];for(let i=1;i<s.close.length;i++)a.push(s.close[i]/s.close[i-1]-1);rets[t]=a;}
+const n=Math.min(...tick.map(t=>rets[t].length));for(const t of tick)rets[t]=rets[t].slice(-n);
+function corr(a,b){const ma=a.reduce((x,y)=>x+y,0)/a.length,mb=b.reduce((x,y)=>x+y,0)/b.length;let num=0,da=0,db=0;for(let i=0;i<a.length;i++){num+=(a[i]-ma)*(b[i]-mb);da+=(a[i]-ma)**2;db+=(b[i]-mb)**2;}return num/Math.sqrt(da*db);}
+function cell(v){if(v>=0.7)return "bg-red-600 text-white";if(v>=0.4)return "bg-amber-500 text-white";if(v>=0.1)return "bg-lime-500 text-white";if(v>=-0.1)return "bg-gray-200";return "bg-blue-500 text-white";}
+return '<h1 class="text-2xl font-bold mb-1">Correlaciones</h1><p class="text-sm text-gray-500 mb-6">Pearson · n = '+n+' meses</p>'+
+'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th></th>'+tick.map(t=>'<th class="px-2 py-1 font-mono font-normal">'+t+'</th>').join("")+'</tr></thead><tbody>'+
+tick.map(a=>'<tr><td class="px-2 py-1 font-mono font-semibold">'+a+'</td>'+tick.map(b=>{const v=corr(rets[a],rets[b]);return '<td class="px-0.5 py-0.5"><div class="w-14 h-8 rounded flex items-center justify-center font-semibold '+cell(v)+'">'+v.toFixed(2)+'</div></td>';}).join("")+'</tr>').join("")+'</tbody></table></div>';}
+function renderTax(){const tr=[["0 €","6.000 €","19 %"],["6.000,01 €","50.000 €","21 %"],["50.000,01 €","200.000 €","23 %"],["200.000,01 €","300.000 €","27 %"],["300.000,01 €","Sin límite","30 %"]];
+return '<h1 class="text-2xl font-bold mb-1">Fiscalidad — IRPF 2026</h1><p class="text-sm text-gray-500 mb-6">Base del ahorro · Territorio común · Fuente: BOE LIRPF art. 66 bis</p>'+
+'<div class="bg-white rounded border p-4 mb-4"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Desde</th><th class="text-left px-3 py-2">Hasta</th><th class="text-left px-3 py-2">Tipo</th></tr></thead><tbody>'+
+tr.map(t=>'<tr class="border-t"><td class="px-3 py-2">'+t[0]+'</td><td class="px-3 py-2">'+t[1]+'</td><td class="px-3 py-2 font-semibold">'+t[2]+'</td></tr>').join("")+'</tbody></table></div>'+
+'<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Exención por reinversión (art. 94 LIRPF)</h3><ul class="text-sm space-y-2 list-disc pl-5"><li>Aplica solo a <strong>IIC (fondos de inversión)</strong>, no a ETFs.</li><li>El traspaso entre fondos no tributa la plusvalía latente.</li><li>El nuevo fondo hereda el precio de adquisición del antiguo.</li><li>Los ETFs <strong>no</strong> se benefician de esta exención.</li></ul></div>'+
+'<p class="text-xs text-gray-500 mt-4">Aviso: cálculo orientativo. No sustituye al asesor ni al borrador de la AEAT.</p>';}
+function renderData(){const e=Object.entries(RAW.data);
+return '<h1 class="text-2xl font-bold mb-1">Datos crudos</h1><p class="text-sm text-gray-500 mb-6">Generados por GitHub Actions · Fuente: '+RAW.source+'</p>'+
+'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Ticker</th><th class="text-left px-3 py-2">Nombre</th><th class="text-left px-3 py-2">Rol</th><th class="text-left px-3 py-2">ISIN</th><th class="text-right px-3 py-2">Filas</th><th class="text-right px-3 py-2">Rango</th></tr></thead><tbody>'+
+e.map(([t,o])=>'<tr class="border-t"><td class="px-3 py-2 font-mono">'+t+'</td><td class="px-3 py-2">'+(o.meta?.name||"—")+'</td><td class="px-3 py-2">'+(o.meta?.role||"—")+'</td><td class="px-3 py-2 font-mono text-xs">'+(o.meta?.isin||"—")+'</td><td class="px-3 py-2 text-right">'+o.close.length+'</td><td class="px-3 py-2 text-right text-xs">'+o.dates[0]+' → '+o.dates[o.dates.length-1]+'</td></tr>').join("")+'</tbody></table></div>';}
+const R={signal:renderSignal,backtest:renderBacktest,allocation:renderAllocation,correlations:renderCorrelations,tax:renderTax,data:renderData};
+function show(v){if(!MONTHLY)return;main.innerHTML=R[v]();document.querySelectorAll("[data-nav]").forEach(el=>el.classList.toggle("active",el.dataset.nav===v));}
+document.querySelectorAll("[data-nav]").forEach(el=>el.addEventListener("click",()=>show(el.dataset.nav)));
+loadData();
+</script>
+</body>
+</html>
