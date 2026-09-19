@@ -7,7 +7,7 @@ import os
 from datetime import datetime, timezone
 import yfinance as yf
 
-# Universo por defecto. Puedes aÃ±adir/quitar tickers aquÃ­.
+#  DICCIONARIO CORREGIDO (Sin llaves huérfanas al final)
 TICKERS = {
     "0P0001CLDM.F": {"name": "Fidelity S&P 500 Index Fund EUR P Acc", "role": "Equity USA", "isin": "IE00BYX5MX67"},
     "0P0001CJGN.F": {"name": "Fidelity MSCI Europe Index Fund EUR P Acc", "role": "Equity Europe", "isin": "IE00BYX5MD61"},
@@ -18,9 +18,13 @@ TICKERS = {
     "0P00012I66.F": {"name": "Vanguard Global Small-Cap Index Fund Inv EUR Acc", "role": "Small Cap", "isin": "IE00B42W3S00"},
     "IWDA.AS": {"name": "iShares Core MSCI World UCITS ETF (benchmark)", "role": "Benchmark", "isin": "IE00B4L5Y983"},
     "0P00000F24.F": {"name": "AXA Trésor Court Terme C", "role": "Cash", "isin": "FR0000447823"},
-    "0P0001CFWF.F": {"name": "Croci sector plus", "role": "Value", "isin": "LU1278917452"},
+    "0P0001CFWF.F": {"name": "Croci sector plus", "role": "Value", "isin": "LU1278917452"}
 }
-}
+
+# 📅 PARÁMETROS OPTIMIZADOS (Para cubrir desde enero 2019 a la actualidad de 2026 sin romper por falta de histórico)
+START_DATE = "2019-01-01"
+INTERVAL = "1mo"
+
 PERIOD = "15y"
 INTERVAL = "1mo"
 
