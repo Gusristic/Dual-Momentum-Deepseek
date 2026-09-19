@@ -20,7 +20,7 @@ TICKERS = {
     "0P00000F24.F": {"name": "AXA Trésor Court Terme C", "role": "Cash", "isin": "FR0000447823"},
     "0P0001CFWF.F": {"name": "Croci sector plus", "role": "Value", "isin": "LU1278917452"},
 }
-
+}
 PERIOD = "15y"
 INTERVAL = "1mo"
 
