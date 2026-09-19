@@ -14,11 +14,9 @@ TICKERS = {
     "0P0001CLDI.F": {"name": "Fidelity MSCI Japan Index Fund EUR P Acc", "role": "Equity Japan", "isin": "IE00BYX5N771"},
     "0P0001AN9J.F": {"name": "iShares Pacific Index Fund (IE) D Acc EUR", "role": "Equity Pacific", "isin": "IE00BDRK7R97"},
     "0P0001AINL.F": {"name": "iShares Emerging Markets Index Fund (IE) D Acc EUR", "role": "Equity EM", "isin": "IE00BYWYCC39"},
-    "0P0000Y354.F": {"name": "iShares Developed Real Estate Index Fund (IE) Inst Acc EUR", "role": "Real Estate", "isin": "IE00B83YJG36"},
     "0P00012I66.F": {"name": "Vanguard Global Small-Cap Index Fund Inv EUR Acc", "role": "Small Cap", "isin": "IE00B42W3S00"},
     "IWDA.AS": {"name": "iShares Core MSCI World UCITS ETF (benchmark)", "role": "Benchmark", "isin": "IE00B4L5Y983"},
     "0P00000F24.F": {"name": "AXA Trésor Court Terme C", "role": "Cash", "isin": "FR0000447823"},
-    "0P0001CFWF.F": {"name": "Croci sector plus", "role": "Value", "isin": "LU1278917452"}
 }
 
 # 📅 PARÁMETROS OPTIMIZADOS (Para cubrir desde enero 2019 a la actualidad de 2026 sin romper por falta de histórico)
