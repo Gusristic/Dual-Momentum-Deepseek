@@ -30,7 +30,7 @@
 </div>
 <script>
 const MODEL_H={w12:0.5,w6:0.3,w3:0.2,threshold:0.005,cashTicker:"XEON.DE"};
-const RISK=["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","IE00B42W3S00.IR"],CASH="0P00000F24.F";let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
+const RISK=["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","0P00012I66.F"];,CASH="0P00000F24.F";let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
 function buildAlignedMatrix(data){const allMonths=new Set();for(const obj of Object.values(data)){if(!obj.dates)continue;for(const d of obj.dates)allMonths.add(d.slice(0,7));}const months=[...allMonths].sort();const idxMap=new Map(months.map((m,i)=>[m,i]));const matrix={};for(const [ticker,obj] of Object.entries(data)){if(!obj.dates)continue;const row=new Array(months.length).fill(null);for(let k=0;k<obj.dates.length;k++){const m=obj.dates[k].slice(0,7);const idx=idxMap.get(m);if(idx!==undefined)row[idx]=obj.close[k];}matrix[ticker]={dates:months,close:row,meta:obj.meta};}return matrix;}
 async function loadData(){document.getElementById("meta").textContent="Cargando datos…";
 try{const r=await fetch("data/prices.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);
@@ -43,7 +43,7 @@ function momentum(t,i,w){const s=MONTHLY[t];if(!s||i-w<0)return null;const p0=s.
 function computeSignals(){const cash=MONTHLY[CASH];if(!cash)return [];const N=cash.close.length;const sig=[];let cur=null;
 for(let i=12;i<N;i++){const c12=momentum(CASH,i,12),c6=momentum(CASH,i,6),c3=momentum(CASH,i,3);if(c12==null)continue;
 const cands=[];for(const t of RISK){const r12=momentum(t,i,12),r6=momentum(t,i,6),r3=momentum(t,i,3);if(r12==null)continue;
-const passes=r12>c12&&r6>c6&&r3>c3;const M=MODEL_H.w12*r12+MODEL_H.w6*r6+MODEL_H.w3*r3;cands.push({ticker:t,r12,r6,r3,M,passes});}
+const passes=r12>c12;const M=MODEL_H.w12*r12+MODEL_H.w6*r6+MODEL_H.w3*r3;cands.push({ticker:t,r12,r6,r3,M,passes});}
 const elig=cands.filter(c=>c.passes);let tgt=null;if(elig.length){elig.sort((a,b)=>b.M-a.M);tgt=elig[0].ticker;}
 let nc=cur;if(cur===null)nc=tgt;else if(tgt===null)nc=null;else if(tgt===cur)nc=cur;else{const cM=cands.find(c=>c.ticker===cur)?.M??-Infinity,tM=cands.find(c=>c.ticker===tgt)?.M??-Infinity;nc=(tM-cM>MODEL_H.threshold)?tgt:cur;}cur=nc;
 sig.push({date:cash.dates[i],month_index:i,current:cur,candidates:cands,cashR12:c12,cashR6:c6,cashR3:c3});}return sig;}
@@ -69,18 +69,24 @@ function drawEq(ser){const c=document.getElementById("eq");if(!c)return;if(chart
 chartRef=new Chart(c,{type:"line",data:{labels:ser.map(s=>s.m),datasets:[{label:"Equity",data:ser.map(s=>s.v),borderColor:"#4338ca",backgroundColor:"rgba(67,56,202,0.1)",borderWidth:2,pointRadius:0,tension:0.15,fill:true}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:10}}},y:{grid:{color:"rgba(0,0,0,0.05)"},ticks:{font:{size:10}}}}}});}
 function renderAllocation(){const sig=computeSignals();if(sig.length<2)return "<p>Datos insuficientes.</p>";
 const rec=sig.slice(-60);const tick=[...RISK,CASH];
-const col={"SPY":"#4338ca","IWDA.AS":"#0891b2","EEM":"#7c3aed","AGGH.MI":"#16a34a","IGLN.L":"#ca8a04","XEON.DE":"#9ca3af"};
-return '<h1 class="text-2xl font-bold mb-1">Asignación histórica</h1><p class="text-sm text-gray-500 mb-6">Últimos '+rec.length+' meses · Modelo H</p>'+
-'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th class="text-left px-2 py-1">Activo</th>'+rec.map(s=>'<th class="px-0.5 py-1 font-normal text-gray-500" style="writing-mode:vertical-rl;height:50px">'+s.date+'</th>').join("")+'</tr></thead><tbody>'+
-tick.map(t=>'<tr><td class="px-2 py-1 font-mono font-semibold whitespace-nowrap">'+t+'</td>'+rec.map(s=>{const a=(s.current??CASH)===t;return '<td class="px-0.5 py-0.5"><div class="w-4 h-4 rounded-sm" style="background:'+(a?col[t]:"#f3f4f6")+'" title="'+s.date+' · '+t+'"></div></td>';}).join("")+'</tr>').join("")+'</tbody></table></div>';}
+const colors=["#4338ca","#0891b2","#7c3aed","#16a34a","#ca8a04","#dc2626","#0ea5e9","#9ca3af"];
+const col={};tick.forEach((t,i)=>col[t]=colors[i%colors.length]);
+const label=t=>RAW.data[t]?.meta?.name||t;
+return '<h1 class="text-2xl font-bold mb-1">Asignación histórica</h1><p class="text-sm text-gray-500 mb-6">Últimos '+rec.length+' meses · Modelo H · Filtro 12M</p>'+
+'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th class="text-left px-2 py-1">Activo</th>'+rec.map(s=>'<th class="px-0.5 py-1 font-normal text-gray-500" style="writing-mode:vertical-rl;height:80px;font-size:10px">'+s.date+'</th>').join("")+'</tr></thead><tbody>'+
+tick.map(t=>'<tr><td class="px-2 py-1 text-xs whitespace-nowrap">'+label(t)+'</td>'+rec.map(s=>{const a=(s.current??CASH)===t;return '<td class="px-0.5 py-0.5"><div class="w-4 h-5 rounded-sm" style="background:'+(a?col[t]:"#f3f4f6")+'" title="'+s.date+' · '+label(t)+'"></div></td>';}).join("")+'</tr>').join("")+'</tbody></table></div>';}
 function renderCorrelations(){const tick=RISK;const rets={};
-for(const t of tick){const s=MONTHLY[t];const a=[];for(let i=1;i<s.close.length;i++)a.push(s.close[i]/s.close[i-1]-1);rets[t]=a;}
-const n=Math.min(...tick.map(t=>rets[t].length));for(const t of tick)rets[t]=rets[t].slice(-n);
+for(const t of tick){const s=MONTHLY[t];if(!s||!s.close)continue;const a=[];for(let i=1;i<s.close.length;i++){if(s.close[i]!==null&&s.close[i-1]!==null)a.push(s.close[i]/s.close[i-1]-1);}rets[t]=a;}
+const validTicks=tick.filter(t=>rets[t]&&rets[t].length>=24);
+const n=validTicks.length>0?Math.min(...validTicks.map(t=>rets[t].length)):0;
+for(const t of validTicks)rets[t]=rets[t].slice(-n);
 function corr(a,b){const ma=a.reduce((x,y)=>x+y,0)/a.length,mb=b.reduce((x,y)=>x+y,0)/b.length;let num=0,da=0,db=0;for(let i=0;i<a.length;i++){num+=(a[i]-ma)*(b[i]-mb);da+=(a[i]-ma)**2;db+=(b[i]-mb)**2;}return num/Math.sqrt(da*db);}
 function cell(v){if(v>=0.7)return "bg-red-600 text-white";if(v>=0.4)return "bg-amber-500 text-white";if(v>=0.1)return "bg-lime-500 text-white";if(v>=-0.1)return "bg-gray-200";return "bg-blue-500 text-white";}
-return '<h1 class="text-2xl font-bold mb-1">Correlaciones</h1><p class="text-sm text-gray-500 mb-6">Pearson · n = '+n+' meses</p>'+
-'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th></th>'+tick.map(t=>'<th class="px-2 py-1 font-mono font-normal">'+t+'</th>').join("")+'</tr></thead><tbody>'+
-tick.map(a=>'<tr><td class="px-2 py-1 font-mono font-semibold">'+a+'</td>'+tick.map(b=>{const v=corr(rets[a],rets[b]);return '<td class="px-0.5 py-0.5"><div class="w-14 h-8 rounded flex items-center justify-center font-semibold '+cell(v)+'">'+v.toFixed(2)+'</div></td>';}).join("")+'</tr>').join("")+'</tbody></table></div>';}
+const short=t=>{const nm=RAW.data[t]?.meta?.name||t;return nm.replace(/Index Fund|UCITS ETF|Fund|\(IE\)|EUR P Acc|Inst Acc EUR|D Acc EUR|Inv EUR Acc|EUR P|Acc EUR|Acc/gi,"").replace(/\s+/g," ").trim();};
+return '<h1 class="text-2xl font-bold mb-1">Correlaciones</h1><p class="text-sm text-gray-500 mb-6">Pearson · Retornos mensuales · n = '+n+' meses</p>'+
+'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th></th>'+validTicks.map(t=>'<th class="px-1 py-1 font-normal" style="writing-mode:vertical-rl;height:110px;font-size:10px">'+short(t)+'</th>').join("")+'</tr></thead><tbody>'+
+validTicks.map(a=>'<tr><td class="px-2 py-1 text-xs whitespace-nowrap">'+short(a)+'</td>'+validTicks.map(b=>{const v=corr(rets[a],rets[b]);return '<td class="px-0.5 py-0.5"><div class="w-12 h-8 rounded flex items-center justify-center font-semibold '+cell(v)+'" title="'+RAW.data[a]?.meta?.name+' ↔ '+RAW.data[b]?.meta?.name+'">'+v.toFixed(2)+'</div></td>';}).join("")+'</tr>').join("")+'</tbody></table></div>'+
+'<div class="flex gap-4 mt-4 text-xs text-gray-500"><div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-red-600"></div> ≥ 0.70</div><div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-amber-500"></div> 0.40 – 0.70</div><div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-lime-500"></div> 0.10 – 0.40</div><div class="flex items-center gap-2"><div class="w-3 h-3 rounded bg-gray-300"></div> −0.10 – 0.10</div></div>';}
 function renderTax(){const tr=[["0 €","6.000 €","19 %"],["6.000,01 €","50.000 €","21 %"],["50.000,01 €","200.000 €","23 %"],["200.000,01 €","300.000 €","27 %"],["300.000,01 €","Sin límite","30 %"]];
 return '<h1 class="text-2xl font-bold mb-1">Fiscalidad — IRPF 2026</h1><p class="text-sm text-gray-500 mb-6">Base del ahorro · Territorio común · Fuente: BOE LIRPF art. 66 bis</p>'+
 '<div class="bg-white rounded border p-4 mb-4"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Desde</th><th class="text-left px-3 py-2">Hasta</th><th class="text-left px-3 py-2">Tipo</th></tr></thead><tbody>'+

@@ -45,8 +45,7 @@ TICKERS = {
         "role": "Real Estate",
         "isin": "IE00B83YJG36",
     },
-    # ─── Small Cap ──────────────────────────────────────────
-    "IE00B42W3S00.IR": {
+        "0P00012I66.F": {
         "name": "Vanguard Global Small-Cap Index Fund Inv EUR Acc",
         "role": "Small Cap",
         "isin": "IE00B42W3S00",
