@@ -16,18 +16,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 <body class="bg-gray-50 text-gray-900">
 <div class="flex min-h-screen">
   <aside class="w-64 bg-white border-r flex flex-col">
-    <div class="p-4 border-b"><h1 class="text-lg font-bold">Dual Momentum</h1><p class="text-xs text-gray-500">Datos reales Â· Yahoo Finance</p></div>
+    <div class="p-4 border-b"><h1 class="text-lg font-bold">Dual Momentum</h1><p class="text-xs text-gray-500">Datos reales &middot; Yahoo Finance</p></div>
     <nav class="flex-1 p-3 space-y-1">
-      <button data-nav="signal" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">SeÃ±al Hoy</button>
+      <button data-nav="signal" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Se&ntilde;al Hoy</button>
       <button data-nav="backtest" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Backtest</button>
-      <button data-nav="allocation" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">AsignaciÃ³n</button>
+      <button data-nav="allocation" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Asignaci&oacute;n</button>
       <button data-nav="correlations" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Correlaciones</button>
       <button data-nav="tax" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Fiscalidad</button>
       <button data-nav="compare" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Comparador</button>
-      <button data-nav="diag" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">DiagnÃ³stico</button>
+      <button data-nav="diag" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Diagn&oacute;stico</button>
       <button data-nav="data" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Datos</button>
+      <button data-nav="tickers" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">Tickers</button>
     </nav>
-    <div id="meta" class="p-3 border-t text-xs text-gray-500">Cargandoâ€¦</div>
+    <div id="meta" class="p-3 border-t text-xs text-gray-500">Cargando&hellip;</div>
   </aside>
   <div class="flex-1 flex flex-col">
     <div class="bg-white border-b px-4 py-2 flex items-center justify-between">
@@ -41,11 +42,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
     <main id="main" class="flex-1 p-6 overflow-auto"></main>
   </div>
 </div>
-
 <aside id="drawer" class="drawer fixed right-0 top-0 h-full w-96 bg-white border-l shadow-2xl z-50 overflow-y-auto">
   <div class="p-4 border-b flex items-center justify-between">
-    <h2 class="font-semibold">ConfiguraciÃ³n del modelo</h2>
-    <button id="btnClose" class="text-gray-500 hover:text-gray-800 text-xl">Ã—</button>
+    <h2 class="font-semibold">Configuraci&oacute;n del modelo</h2>
+    <button id="btnClose" class="text-gray-500 hover:text-gray-800 text-xl">&times;</button>
   </div>
   <div id="drawerBody" class="p-4 space-y-4"></div>
   <div class="p-4 border-t flex gap-2">
@@ -54,53 +54,61 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
   </div>
 </aside>
 <div id="backdrop" class="fixed inset-0 bg-black bg-opacity-20 hidden z-40"></div>
-
 <script>
-// â”€â”€â”€ MODELOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MODELS = {
-  A: { name: "A Â· Antonacci clÃ¡sico", desc: "12M relative + 12M absolute vs cash", editable: [] },
-  B: { name: "B Â· SMA200 (aprox SMA10 mensual)", desc: "Filtro: precio > SMA10 mensual", editable: [] },
-  C: { name: "C Â· Blended 6M + 12M (50/50)", desc: "Momentum (R6+R12)/2, filtro 12M > cash", editable: [{k:"w12",label:"Peso 12M",def:0.5},{k:"w6",label:"Peso 6M",def:0.5}] },
-  D: { name: "D Â· Multi-rol (adaptado)", desc: "Top-1 por rol entre los que pasan filtro 12M, pesos iguales", editable: [] },
-  E: { name: "E Â· Risk parity", desc: "Pesos inversos a volatilidad entre los que pasan filtro 12M", editable: [] },
-  F: { name: "F Â· VAA breadth (adaptado)", desc: "Si >50% del universo pasa filtro 12M â†’ top-1 por momentum 12M; si no â†’ cash", editable: [{k:"breadth",label:"Umbral breadth (%)",def:50}] },
-  G: { name: "G Â· Rebalanceo trimestral", desc: "Igual que A pero solo rebalancea cada 3 meses", editable: [] },
-  H: { name: "H Â· Multi-ventana 12M/6M/3M", desc: "Pesos editables, filtro estricto o 12M, top-1", editable: [{k:"w12",label:"Peso 12M",def:0.5},{k:"w6",label:"Peso 6M",def:0.3},{k:"w3",label:"Peso 3M",def:0.2},{k:"threshold",label:"Umbral rotaciÃ³n (ej. 0.005 = 0.5%)",def:0.005}] },
+  A: { name: "A - Antonacci clasico", desc: "12M relative + 12M absolute vs cash", editable: [] },
+  B: { name: "B - SMA200 (SMA10 mensual)", desc: "Filtro: precio > SMA10 mensual", editable: [] },
+  C: { name: "C - Blended 6M + 12M", desc: "Momentum (R6+R12) ponderado, filtro 12M > cash", editable: [{k:"w12",label:"Peso 12M",def:0.5},{k:"w6",label:"Peso 6M",def:0.5}] },
+  D: { name: "D - Multi-rol (adaptado)", desc: "Top-1 por rol entre los que pasan filtro 12M, pesos iguales", editable: [] },
+  E: { name: "E - Risk parity", desc: "Pesos inversos a volatilidad entre los que pasan filtro 12M", editable: [] },
+  F: { name: "F - VAA breadth (adaptado)", desc: "Si >50% del universo pasa filtro 12M -> top-1; si no -> cash", editable: [{k:"breadth",label:"Umbral breadth (%)",def:50}] },
+  G: { name: "G - Rebalanceo trimestral", desc: "Igual que A pero solo rebalancea cada 3 meses", editable: [] },
+  H: { name: "H - Multi-ventana 12M/6M/3M", desc: "Pesos editables, filtro estricto o 12M, top-1", editable: [{k:"w12",label:"Peso 12M",def:0.5},{k:"w6",label:"Peso 6M",def:0.3},{k:"w3",label:"Peso 3M",def:0.2},{k:"threshold",label:"Umbral rotacion (0.005 = 0.5%)",def:0.005}] },
 };
-
 const DEFAULT_CONFIG = {
-  model: "H",
-  rebalance: "monthly",
-  params: {
-    A: {}, B: {}, D: {}, E: {}, G: {},
-    C: { w12: 0.5, w6: 0.5 },
-    F: { breadth: 50 },
-    H: { w12: 0.5, w6: 0.3, w3: 0.2, threshold: 0.005 },
-  },
+  model: "H", rebalance: "monthly",
+  params: { A:{},B:{},D:{},E:{},G:{}, C:{w12:0.5,w6:0.5}, F:{breadth:50}, H:{w12:0.5,w6:0.3,w3:0.2,threshold:0.005,strict:false} },
 };
-
 let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-try {
-  const saved = localStorage.getItem("dm_config");
-  if (saved) CONFIG = Object.assign(CONFIG, JSON.parse(saved));
-} catch(e) {}
+try { const s = localStorage.getItem("dm_config"); if (s) CONFIG = Object.assign(CONFIG, JSON.parse(s)); } catch(e){}
 
-// â”€â”€â”€ DATOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CASH = "0P00000F24.F";
+const BENCHMARK = "IWDA.AS";
 const RISK = ["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","0P00012I66.F"];
 let RAW = null, MONTHLY = null;
 const main = document.getElementById("main");
 let chartRef = null;
 
-function buildAlignedMatrix(data){const allMonths=new Set();for(const obj of Object.values(data)){if(!obj.dates)continue;for(const d of obj.dates)allMonths.add(d.slice(0,7));}const months=[...allMonths].sort();const idxMap=new Map(months.map((m,i)=>[m,i]));const matrix={};for(const [ticker,obj] of Object.entries(data)){if(!obj.dates)continue;const row=new Array(months.length).fill(null);for(let k=0;k<obj.dates.length;k++){const m=obj.dates[k].slice(0,7);const idx=idxMap.get(m);if(idx!==undefined)row[idx]=obj.close[k];}matrix[ticker]={dates:months,close:row,meta:obj.meta};}return matrix;}
+function buildAlignedMatrix(data){
+  const allMonths = new Set();
+  for (const obj of Object.values(data)) {
+    if (!obj.dates) continue;
+    for (const d of obj.dates) allMonths.add(d.slice(0,7));
+  }
+  const months = [...allMonths].sort();
+  const idxMap = new Map(months.map((m,i) => [m,i]));
+  const matrix = {};
+  for (const [ticker,obj] of Object.entries(data)) {
+    if (!obj.dates) continue;
+    const row = new Array(months.length).fill(null);
+    for (let k = 0; k < obj.dates.length; k++) {
+      const m = obj.dates[k].slice(0,7);
+      const idx = idxMap.get(m);
+      if (idx !== undefined) row[idx] = obj.close[k];
+    }
+    matrix[ticker] = { dates: months, close: row, meta: obj.meta };
+  }
+  return matrix;
+}
+
 async function loadData(){
-  document.getElementById("meta").textContent = "Cargando datosâ€¦";
+  document.getElementById("meta").textContent = "Cargando...";
   try {
     const r = await fetch("data/prices.json", { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     RAW = await r.json();
     MONTHLY = buildAlignedMatrix(RAW.data);
-    const w = RAW.generated_at ? new Date(RAW.generated_at).toLocaleString("es-ES") : "â€”";
+    const w = RAW.generated_at ? new Date(RAW.generated_at).toLocaleString("es-ES") : "-";
     document.getElementById("meta").innerHTML = Object.keys(RAW.data).length + " instrumentos<br>Actualizado: " + w;
     show("signal");
   } catch (e) {
@@ -109,11 +117,10 @@ async function loadData(){
   }
 }
 
-// â”€â”€â”€ HELPERS MOMENTUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function momentum(t, i, w) {
   const s = MONTHLY[t];
   if (!s || i - w < 0) return null;
-  const p0 = s.close[i - w], p1 = s.close[i];
+  const p0 = s.close[i-w], p1 = s.close[i];
   if (p0 === null || p1 === null || p0 === undefined || p1 === undefined) return null;
   return p1 / p0 - 1;
 }
@@ -127,7 +134,7 @@ function vol(t, i, w) {
   }
   if (rets.length < 3) return null;
   const m = rets.reduce((a,b) => a+b, 0) / rets.length;
-  const v = rets.reduce((a,b) => a + (b-m)**2, 0) / rets.length;
+  const v = rets.reduce((a,b) => a + (b-m)*(b-m), 0) / rets.length;
   return Math.sqrt(v);
 }
 function sma(t, i, w) {
@@ -141,30 +148,25 @@ function sma(t, i, w) {
   return n === 0 ? null : sum / n;
 }
 
-// â”€â”€â”€ MOTORES DE CADA MODELO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Cada motor devuelve: { date, month_index, weights: {ticker: w}, breakdown: {...} }
-function computeA(params, rebalance) {
+function computeA() {
   const cash = MONTHLY[CASH]; if (!cash) return [];
-  const N = cash.close.length; const out = []; let current = null;
+  const N = cash.close.length; const out = [];
   for (let i = 12; i < N; i++) {
     const c12 = momentum(CASH, i, 12);
     if (c12 === null) continue;
     const cands = [];
     for (const t of RISK) {
-      const r12 = momentum(t, i, 12);
-      if (r12 === null) continue;
+      const r12 = momentum(t, i, 12); if (r12 === null) continue;
       cands.push({ ticker: t, r12, passes: r12 > c12 });
     }
     const elig = cands.filter(c => c.passes).sort((a,b) => b.r12 - a.r12);
-    const target = elig.length > 0 ? elig[0].ticker : null;
-    current = target;
-    out.push({ date: cash.dates[i], month_index: i, current, candidates: cands, cash12: c12 });
+    out.push({ date: cash.dates[i], month_index: i, current: elig.length > 0 ? elig[0].ticker : null, candidates: cands, cash12: c12 });
   }
   return out;
 }
-function computeB(params, rebalance) {
+function computeB() {
   const cash = MONTHLY[CASH]; if (!cash) return [];
-  const N = cash.close.length; const out = []; let current = null;
+  const N = cash.close.length; const out = [];
   for (let i = 12; i < N; i++) {
     const cands = [];
     for (const t of RISK) {
@@ -175,51 +177,43 @@ function computeB(params, rebalance) {
       cands.push({ ticker: t, r12, passes: price > m10 });
     }
     const elig = cands.filter(c => c.passes).sort((a,b) => b.r12 - a.r12);
-    const target = elig.length > 0 ? elig[0].ticker : null;
-    current = target;
-    out.push({ date: cash.dates[i], month_index: i, current, candidates: cands });
+    out.push({ date: cash.dates[i], month_index: i, current: elig.length > 0 ? elig[0].ticker : null, candidates: cands });
   }
   return out;
 }
-function computeC(params, rebalance) {
+function computeC(params) {
   const cash = MONTHLY[CASH]; if (!cash) return [];
-  const N = cash.close.length; const out = []; let current = null;
+  const N = cash.close.length; const out = [];
   const w12 = params.w12 ?? 0.5, w6 = params.w6 ?? 0.5;
   for (let i = 12; i < N; i++) {
-    const c12 = momentum(CASH, i, 12);
-    if (c12 === null) continue;
+    const c12 = momentum(CASH, i, 12); if (c12 === null) continue;
     const cands = [];
     for (const t of RISK) {
-      const r12 = momentum(t, i, 12); const r6 = momentum(t, i, 6);
+      const r12 = momentum(t, i, 12), r6 = momentum(t, i, 6);
       if (r12 === null || r6 === null) continue;
       const M = w12 * r12 + w6 * r6;
       cands.push({ ticker: t, r12, r6, M, passes: r12 > c12 });
     }
     const elig = cands.filter(c => c.passes).sort((a,b) => b.M - a.M);
-    const target = elig.length > 0 ? elig[0].ticker : null;
-    current = target;
-    out.push({ date: cash.dates[i], month_index: i, current, candidates: cands, cash12: c12 });
+    out.push({ date: cash.dates[i], month_index: i, current: elig.length > 0 ? elig[0].ticker : null, candidates: cands, cash12: c12 });
   }
   return out;
 }
 function computeD() {
-  // Adaptado: todos los que pasan filtro 12M, pesos iguales entre ellos
   const cash = MONTHLY[CASH]; if (!cash) return [];
   const N = cash.close.length; const out = [];
   for (let i = 12; i < N; i++) {
-    const c12 = momentum(CASH, i, 12);
-    if (c12 === null) continue;
+    const c12 = momentum(CASH, i, 12); if (c12 === null) continue;
     const cands = [];
     for (const t of RISK) {
-      const r12 = momentum(t, i, 12);
-      if (r12 === null) continue;
+      const r12 = momentum(t, i, 12); if (r12 === null) continue;
       cands.push({ ticker: t, r12, passes: r12 > c12 });
     }
     const elig = cands.filter(c => c.passes);
     const weights = {};
-    if (elig.length === 0) { weights[CASH] = 1; }
-    else { elig.forEach(c => weights[c.ticker] = 1 / elig.length); }
-    out.push({ date: cash.dates[i], month_index: i, weights, current: null, candidates: cands, cash12: c12, multi: true });
+    if (elig.length === 0) weights[CASH] = 1;
+    else elig.forEach(c => weights[c.ticker] = 1 / elig.length);
+    out.push({ date: cash.dates[i], month_index: i, weights, current: null, candidates: cands, multi: true, cash12: c12 });
   }
   return out;
 }
@@ -227,23 +221,22 @@ function computeE() {
   const cash = MONTHLY[CASH]; if (!cash) return [];
   const N = cash.close.length; const out = [];
   for (let i = 12; i < N; i++) {
-    const c12 = momentum(CASH, i, 12);
-    if (c12 === null) continue;
+    const c12 = momentum(CASH, i, 12); if (c12 === null) continue;
     const cands = [];
     for (const t of RISK) {
-      const r12 = momentum(t, i, 12); const v = vol(t, i, 12);
+      const r12 = momentum(t, i, 12), v = vol(t, i, 12);
       if (r12 === null || v === null || v === 0) continue;
       cands.push({ ticker: t, r12, vol: v, passes: r12 > c12 });
     }
     const elig = cands.filter(c => c.passes);
     const weights = {};
-    if (elig.length === 0) { weights[CASH] = 1; }
+    if (elig.length === 0) weights[CASH] = 1;
     else {
       const invVols = elig.map(c => 1 / c.vol);
       const sumInv = invVols.reduce((a,b) => a+b, 0);
-      elig.forEach((c, k) => weights[c.ticker] = invVols[k] / sumInv);
+      elig.forEach((c,k) => weights[c.ticker] = invVols[k] / sumInv);
     }
-    out.push({ date: cash.dates[i], month_index: i, weights, current: null, candidates: cands, cash12: c12, multi: true });
+    out.push({ date: cash.dates[i], month_index: i, weights, current: null, candidates: cands, multi: true, cash12: c12 });
   }
   return out;
 }
@@ -252,12 +245,10 @@ function computeF(params) {
   const N = cash.close.length; const out = [];
   const threshold = (params.breadth ?? 50) / 100;
   for (let i = 12; i < N; i++) {
-    const c12 = momentum(CASH, i, 12);
-    if (c12 === null) continue;
+    const c12 = momentum(CASH, i, 12); if (c12 === null) continue;
     const cands = [];
     for (const t of RISK) {
-      const r12 = momentum(t, i, 12);
-      if (r12 === null) continue;
+      const r12 = momentum(t, i, 12); if (r12 === null) continue;
       cands.push({ ticker: t, r12, passes: r12 > c12 });
     }
     const passCount = cands.filter(c => c.passes).length;
@@ -272,17 +263,14 @@ function computeF(params) {
   return out;
 }
 function computeG() {
-  const signals = computeA({}, "quarterly");
-  // Aplicar rebalanceo trimestral: mantener posiciÃ³n 3 meses
+  const raw = computeA();
   const out = [];
-  let lastRotationIdx = -1;
-  let current = null;
-  signals.forEach((s, i) => {
-    const monthsSinceLastRotation = i - lastRotationIdx;
-    const shouldRotate = lastRotationIdx === -1 || monthsSinceLastRotation >= 3 || s.current === null;
+  let lastRotation = -1, current = null;
+  raw.forEach((s, i) => {
+    const shouldRotate = lastRotation === -1 || (i - lastRotation) >= 3 || s.current === null;
     if (shouldRotate) {
+      if (s.current !== current) lastRotation = i;
       current = s.current;
-      if (s.current !== (out[i-1]?.current ?? null)) lastRotationIdx = i;
     }
     out.push({ ...s, current });
   });
@@ -295,11 +283,11 @@ function computeH(params) {
   const thr = params.threshold ?? 0.005;
   const useStrict = params.strict ?? false;
   for (let i = 12; i < N; i++) {
-    const c12 = momentum(CASH, i, 12); const c6 = momentum(CASH, i, 6); const c3 = momentum(CASH, i, 3);
+    const c12 = momentum(CASH, i, 12), c6 = momentum(CASH, i, 6), c3 = momentum(CASH, i, 3);
     if (c12 === null) continue;
     const cands = [];
     for (const t of RISK) {
-      const r12 = momentum(t, i, 12); const r6 = momentum(t, i, 6); const r3 = momentum(t, i, 3);
+      const r12 = momentum(t, i, 12), r6 = momentum(t, i, 6), r3 = momentum(t, i, 3);
       if (r12 === null || r6 === null || r3 === null) continue;
       const passes = useStrict ? (r12 > c12 && r6 > c6 && r3 > c3) : (r12 > c12);
       const M = w12 * r12 + w6 * r6 + w3 * r3;
@@ -321,14 +309,12 @@ function computeH(params) {
   }
   return out;
 }
-
 function computeSignals() {
-  const M = CONFIG.model;
-  const P = CONFIG.params[M] || {};
-  switch (M) {
-    case "A": return computeA(P, CONFIG.rebalance);
-    case "B": return computeB(P, CONFIG.rebalance);
-    case "C": return computeC(P, CONFIG.rebalance);
+  const M = CONFIG.model; const P = CONFIG.params[M] || {};
+  switch(M) {
+    case "A": return computeA();
+    case "B": return computeB();
+    case "C": return computeC(P);
     case "D": return computeD();
     case "E": return computeE();
     case "F": return computeF(P);
@@ -338,30 +324,27 @@ function computeSignals() {
   }
 }
 
-// â”€â”€â”€ VISTAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function label(t) { return t === null ? (RAW.data[CASH]?.meta?.name || "Cash") : (RAW.data[t]?.meta?.name || t); }
+function shortLabel(t) { return (RAW.data[t]?.meta?.name || t).replace(/Index Fund|UCITS ETF|Fund|\(IE\)|EUR P Acc|Inst Acc EUR|D Acc EUR|Inv EUR Acc|EUR P|Acc EUR|Acc/gi,"").replace(/\s+/g," ").trim(); }
 
 function renderSignal() {
   const sig = computeSignals();
   if (!sig.length) return "<p>Datos insuficientes.</p>";
-  const last = sig[sig.length - 1];
+  const last = sig[sig.length-1];
   const info = MODELS[CONFIG.model];
-  const isMulti = last.multi;
-  return '<h1 class="text-2xl font-bold mb-1">SeÃ±al Hoy</h1>' +
-    '<p class="text-sm text-gray-500 mb-2">' + info.name + ' Â· Datos a ' + last.date + '</p>' +
+  return '<h1 class="text-2xl font-bold mb-1">Se&ntilde;al Hoy</h1>' +
+    '<p class="text-sm text-gray-500 mb-2">' + info.name + ' &middot; Datos a ' + last.date + '</p>' +
     '<p class="text-xs text-gray-500 mb-6">' + info.desc + '</p>' +
-    (isMulti
-      ? renderMultiPositions(last)
-      : renderSinglePosition(last)) +
-    (CONFIG.model === "H" && last.candidates ? renderWindowBreakdown(last) : "") +
+    (last.multi ? renderMulti(last) : renderSingle(last)) +
+    (CONFIG.model === "H" && last.candidates ? renderBreakdown(last) : "") +
     (CONFIG.model === "F" && last.breadth !== undefined ? '<div class="bg-blue-50 border border-blue-200 rounded p-3 mt-4 text-sm"><strong>Breadth:</strong> ' + (last.breadth*100).toFixed(0) + '% del universo pasa el filtro</div>' : "");
 }
-function renderSinglePosition(last) {
+function renderSingle(last) {
   const dest = last.current === null ? CASH : last.current;
   const isCash = last.current === null;
   return '<div class="mb-4 p-4 rounded border ' + (isCash ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300') + '">' +
     '<div class="font-semibold">Destino: ' + label(dest) + '</div>' +
-    '<p class="text-sm mt-1">' + (isCash ? "NingÃºn activo supera el filtro. Cartera 100% cash." : "Activo con mayor momentum que pasa el filtro.") + '</p></div>' +
+    '<p class="text-sm mt-1">' + (isCash ? "Ning&uacute;n activo supera el filtro. Cartera 100% cash." : "Activo con mayor momentum que pasa el filtro.") + '</p></div>' +
     '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">' +
     (last.candidates || []).map(c => '<div class="bg-white rounded border p-4 ' + (c.ticker === last.current ? 'ring-2 ring-indigo-500' : '') + '">' +
       '<div class="text-xs text-gray-500">' + (RAW.data[c.ticker]?.meta?.role || "") + '</div>' +
@@ -372,32 +355,63 @@ function renderSinglePosition(last) {
       '<div class="mt-2 text-xs">' + (c.passes ? '<span class="text-green-700 font-medium">Pasa filtro</span>' : '<span class="text-red-600 font-medium">No pasa filtro</span>') + '</div>' +
       '</div>').join("") + '</div>';
 }
-function renderMultiPositions(last) {
-  const weights = last.weights || {};
-  const entries = Object.entries(weights).sort((a,b) => b[1] - a[1]);
+function renderMulti(last) {
+  const entries = Object.entries(last.weights || {}).sort((a,b) => b[1] - a[1]);
   return '<div class="mb-4 p-4 rounded border bg-indigo-50 border-indigo-300">' +
     '<div class="font-semibold">Cartera ponderada (' + entries.length + ' posiciones)</div></div>' +
     '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">' +
-    entries.map(([t, w]) => '<div class="bg-white rounded border p-4">' +
+    entries.map(([t,w]) => '<div class="bg-white rounded border p-4">' +
       '<div class="text-xs text-gray-500">' + (RAW.data[t]?.meta?.role || "") + '</div>' +
       '<div class="font-medium">' + label(t) + '</div>' +
-      '<div class="text-2xl font-bold mt-2">' + (w * 100).toFixed(1) + ' %</div></div>').join("") +
-    '</div>';
+      '<div class="text-2xl font-bold mt-2">' + (w * 100).toFixed(1) + ' %</div></div>').join("") + '</div>';
 }
-function renderWindowBreakdown(last) {
+function renderBreakdown(last) {
   const top = (last.candidates || []).find(c => c.ticker === last.current) || (last.candidates || [])[0];
   if (!top) return "";
   const wins = [
     { w: "12M", a: top.r12, c: last.cash12, p: top.r12 > last.cash12 },
-    { w: "6M",  a: top.r6,  c: last.cash6,  p: top.r6 > last.cash6 },
-    { w: "3M",  a: top.r3,  c: last.cash3,  p: top.r3 > last.cash3 },
+    { w: "6M", a: top.r6, c: last.cash6, p: top.r6 > last.cash6 },
+    { w: "3M", a: top.r3, c: last.cash3, p: top.r3 > last.cash3 }
   ];
-  return '<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Desglose por ventana â€” activo seleccionado</h3>' +
+  return '<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Desglose por ventana</h3>' +
     wins.map(w => '<div class="flex items-center gap-4 py-2">' +
       '<span class="w-10 font-mono text-sm">' + w.w + '</span>' +
       '<div class="flex-1"><div class="h-6 bg-gray-100 rounded overflow-hidden relative"><div class="h-full ' + (w.p ? 'bg-green-500' : 'bg-red-500') + '" style="width:' + Math.max(5, Math.min(100, w.a * 500)) + '%"></div></div></div>' +
-      '<span class="text-xs w-40 text-right">activo ' + (w.a * 100).toFixed(2) + ' % Â· cash ' + (w.c * 100).toFixed(2) + ' %</span>' +
-      '<span class="text-xs font-medium w-6 ' + (w.p ? 'text-green-700' : 'text-red-600') + '">' + (w.p ? 'âœ“' : 'âœ—') + '</span></div>').join("") + '</div>';
+      '<span class="text-xs w-40 text-right">activo ' + (w.a * 100).toFixed(2) + ' % &middot; cash ' + (w.c * 100).toFixed(2) + ' %</span>' +
+      '<span class="text-xs font-medium w-6 ' + (w.p ? 'text-green-700' : 'text-red-600') + '">' + (w.p ? 'OK' : 'X') + '</span></div>').join("") + '</div>';
+}
+
+function computeEquity(prev, curr) {
+  if (prev.multi) {
+    const w = prev.weights || {};
+    let ret = 0;
+    for (const [t, wt] of Object.entries(w)) {
+      const p0 = MONTHLY[t]?.close[prev.month_index], p1 = MONTHLY[t]?.close[curr.month_index];
+      if (p0 !== null && p1 !== null && p0) ret += wt * (p1/p0 - 1);
+    }
+    return ret;
+  } else {
+    const a = prev.current ?? CASH;
+    const p0 = MONTHLY[a]?.close[prev.month_index], p1 = MONTHLY[a]?.close[curr.month_index];
+    return (p0 !== null && p1 !== null && p0) ? (p1/p0 - 1) : 0;
+  }
+}
+
+function computeBenchmarkSeries(months) {
+  const b = MONTHLY[BENCHMARK];
+  if (!b) return null;
+  const out = [];
+  let eq = 1;
+  for (let k = 0; k < months.length; k++) {
+    if (k === 0) { out.push(1); continue; }
+    const i = b.dates.indexOf(months[k]);
+    const ip = b.dates.indexOf(months[k-1]);
+    if (i < 0 || ip < 0) { out.push(null); continue; }
+    const p0 = b.close[ip], p1 = b.close[i];
+    if (p0 !== null && p1 !== null && p0) eq *= p1 / p0;
+    out.push(eq);
+  }
+  return out;
 }
 
 function renderBacktest() {
@@ -406,45 +420,49 @@ function renderBacktest() {
   let eq = 1;
   const ser = [{ m: sig[0].date, v: 1 }];
   for (let i = 1; i < sig.length; i++) {
-    const prev = sig[i-1], curr = sig[i];
-    let ret = 0;
-    if (prev.multi) {
-      const w = prev.weights || {};
-      for (const [t, wt] of Object.entries(w)) {
-        const p0 = MONTHLY[t].close[prev.month_index], p1 = MONTHLY[t].close[curr.month_index];
-        if (p0 !== null && p1 !== null && p0) ret += wt * (p1/p0 - 1);
-      }
-    } else {
-      const a = prev.current ?? CASH;
-      const p0 = MONTHLY[a].close[prev.month_index], p1 = MONTHLY[a].close[curr.month_index];
-      ret = p0 !== null && p1 !== null && p0 ? (p1/p0 - 1) : 0;
-    }
-    eq *= (1 + ret);
-    ser.push({ m: curr.date, v: eq });
+    const r = computeEquity(sig[i-1], sig[i]);
+    eq *= (1 + r);
+    ser.push({ m: sig[i].date, v: eq });
   }
   const rets = [];
   for (let i = 1; i < ser.length; i++) rets.push(ser[i].v / ser[i-1].v - 1);
   const mean = rets.reduce((a,b) => a+b, 0) / rets.length;
-  const varr = rets.reduce((a,b) => a + (b-mean)**2, 0) / rets.length;
+  const varr = rets.reduce((a,b) => a + (b-mean)*(b-mean), 0) / rets.length;
   const vol = Math.sqrt(varr) * Math.sqrt(12);
   const cagr = Math.pow(eq, 12/rets.length) - 1;
   const sharpe = vol > 0 ? (mean * 12) / vol : 0;
   let peak = 1, mdd = 0;
   for (const s of ser) { if (s.v > peak) peak = s.v; const dd = (s.v - peak) / peak; if (dd < mdd) mdd = dd; }
   const pos = rets.filter(r => r > 0).length / rets.length;
-  setTimeout(() => drawEq(ser), 0);
-  return '<h1 class="text-2xl font-bold mb-1">Backtest â€” ' + MODELS[CONFIG.model].name + '</h1>' +
-    '<p class="text-sm text-gray-500 mb-6">' + ser[0].m + ' â†’ ' + ser[ser.length-1].m + ' Â· ' + ser.length + ' meses</p>' +
+
+  const bench = computeBenchmarkSeries(ser.map(s => s.m));
+  let benchStats = null;
+  if (bench) {
+    const bLast = bench[bench.length-1];
+    let bPeak = 1, bMdd = 0;
+    for (const v of bench) { if (v === null) continue; if (v > bPeak) bPeak = v; const dd = (v-bPeak)/bPeak; if (dd < bMdd) bMdd = dd; }
+    const bCagr = Math.pow(bLast, 12/(bench.length-1)) - 1;
+    benchStats = { total: (bLast-1)*100, cagr: bCagr*100, mdd: bMdd*100 };
+  }
+  setTimeout(() => drawEq(ser, bench), 0);
+
+  return '<h1 class="text-2xl font-bold mb-1">Backtest &mdash; ' + MODELS[CONFIG.model].name + '</h1>' +
+    '<p class="text-sm text-gray-500 mb-6">' + ser[0].m + ' &rarr; ' + ser[ser.length-1].m + ' &middot; ' + ser.length + ' meses</p>' +
     '<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">' +
-    [["CAGR", (cagr*100).toFixed(2) + " %"], ["Volatilidad", (vol*100).toFixed(2) + " %"], ["Sharpe", sharpe.toFixed(2)], ["Max Drawdown", (mdd*100).toFixed(2) + " %"], ["Retorno total", ((eq-1)*100).toFixed(2) + " %"], ["% positivos", (pos*100).toFixed(1) + " %"], ["Meses", ser.length], ["Ratio ret/DD", mdd !== 0 ? (cagr/Math.abs(mdd)).toFixed(2) : "â€”"]]
+    [["CAGR", (cagr*100).toFixed(2) + " %"], ["Volatilidad", (vol*100).toFixed(2) + " %"], ["Sharpe", sharpe.toFixed(2)], ["Max Drawdown", (mdd*100).toFixed(2) + " %"], ["Retorno total", ((eq-1)*100).toFixed(2) + " %"], ["% positivos", (pos*100).toFixed(1) + " %"], ["Meses", ser.length], ["Ratio ret/DD", mdd !== 0 ? (cagr/Math.abs(mdd)).toFixed(2) : "-"]]
     .map(m => '<div class="bg-white rounded border p-4"><div class="text-xs text-gray-500">' + m[0] + '</div><div class="text-xl font-bold mt-1">' + m[1] + '</div></div>').join("") + '</div>' +
+    (benchStats ? '<div class="grid grid-cols-3 gap-3 mb-6">' +
+      [["MSCI World - Retorno total", benchStats.total.toFixed(2) + " %"], ["MSCI World - CAGR", benchStats.cagr.toFixed(2) + " %"], ["MSCI World - Max DD", benchStats.mdd.toFixed(2) + " %"]]
+      .map(m => '<div class="bg-slate-100 rounded border p-4"><div class="text-xs text-gray-500">' + m[0] + '</div><div class="text-lg font-bold mt-1">' + m[1] + '</div></div>').join("") + '</div>' : "") +
     '<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Curva de equity (base 1.00)</h3><canvas id="eq" height="100"></canvas></div>';
 }
-function drawEq(ser) {
+
+function drawEq(ser, bench) {
   const c = document.getElementById("eq"); if (!c) return;
   if (chartRef) chartRef.destroy();
-  chartRef = new Chart(c, { type: "line", data: { labels: ser.map(s => s.m), datasets: [{ label: "Equity", data: ser.map(s => s.v), borderColor: "#4338ca", backgroundColor: "rgba(67,56,202,0.1)", borderWidth: 2, pointRadius: 0, tension: 0.15, fill: true }] },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 10 } } }, y: { grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 10 } } } } } });
+  const datasets = [{ label: "Modelo", data: ser.map(s => s.v), borderColor: "#4338ca", backgroundColor: "rgba(67,56,202,0.1)", borderWidth: 2, pointRadius: 0, tension: 0.15, fill: false }];
+  if (bench) datasets.push({ label: "MSCI World", data: bench, borderColor: "#94a3b8", backgroundColor: "rgba(148,163,184,0.1)", borderWidth: 1.5, borderDash: [4,4], pointRadius: 0, tension: 0.15, fill: false });
+  chartRef = new Chart(c, { type: "line", data: { labels: ser.map(s => s.m), datasets }, options: { responsive: true, plugins: { legend: { display: true, position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } }, scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 10 } } }, y: { grid: { color: "rgba(0,0,0,0.05)" }, ticks: { font: { size: 10 } } } } } });
 }
 
 function renderAllocation() {
@@ -452,17 +470,14 @@ function renderAllocation() {
   const rec = sig.slice(-60);
   const tick = [...RISK, CASH];
   const colors = ["#4338ca","#0891b2","#7c3aed","#16a34a","#ca8a04","#dc2626","#0ea5e9","#9ca3af"];
-  const col = {}; tick.forEach((t, i) => col[t] = colors[i % colors.length]);
-  const short = t => (RAW.data[t]?.meta?.name || t).replace(/Index Fund|UCITS ETF|Fund|\(IE\)|EUR P Acc|Inst Acc EUR|D Acc EUR|Inv EUR Acc|EUR P|Acc EUR|Acc/gi,"").replace(/\s+/g," ").trim().slice(0, 40);
-  return '<h1 class="text-2xl font-bold mb-1">AsignaciÃ³n histÃ³rica</h1><p class="text-sm text-gray-500 mb-6">Ãšltimos ' + rec.length + ' meses Â· ' + MODELS[CONFIG.model].name + '</p>' +
+  const col = {}; tick.forEach((t,i) => col[t] = colors[i % colors.length]);
+  return '<h1 class="text-2xl font-bold mb-1">Asignaci&oacute;n hist&oacute;rica</h1><p class="text-sm text-gray-500 mb-6">&Uacute;ltimos ' + rec.length + ' meses &middot; ' + MODELS[CONFIG.model].name + '</p>' +
     '<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th class="text-left px-2 py-1">Activo</th>' +
     rec.map(s => '<th class="px-0.5 py-1 font-normal text-gray-500" style="writing-mode:vertical-rl;height:80px;font-size:10px">' + s.date + '</th>').join("") + '</tr></thead><tbody>' +
-    tick.map(t => '<tr><td class="px-2 py-1 text-xs whitespace-nowrap">' + short(t) + '</td>' +
+    tick.map(t => '<tr><td class="px-2 py-1 text-xs whitespace-nowrap">' + shortLabel(t) + '</td>' +
       rec.map(s => {
-        let active = false;
-        if (s.multi) active = (s.weights[t] ?? 0) > 0.01;
-        else active = (s.current ?? CASH) === t;
-        return '<td class="px-0.5 py-0.5"><div class="w-4 h-5 rounded-sm" style="background:' + (active ? col[t] : "#f3f4f6") + '" title="' + s.date + ' Â· ' + short(t) + '"></div></td>';
+        const active = s.multi ? ((s.weights[t] ?? 0) > 0.01) : ((s.current ?? CASH) === t);
+        return '<td class="px-0.5 py-0.5"><div class="w-4 h-5 rounded-sm" style="background:' + (active ? col[t] : "#f3f4f6") + '" title="' + s.date + ' &middot; ' + shortLabel(t) + '"></div></td>';
       }).join("") + '</tr>').join("") + '</tbody></table></div>';
 }
 
@@ -470,21 +485,20 @@ function renderCorrelations() {
   const tick = RISK;
   const rets = {};
   for (const t of tick) {
-    const s = MONTHLY[t];
-    if (!s || !s.close) continue;
+    const s = MONTHLY[t]; if (!s || !s.close) continue;
     const a = [];
     for (let i = 1; i < s.close.length; i++) {
-      if (s.close[i] !== null && s.close[i-1] !== null) a.push(s.close[i] / s.close[i-1] - 1);
+      if (s.close[i] !== null && s.close[i-1] !== null) a.push(s.close[i]/s.close[i-1] - 1);
     }
     rets[t] = a;
   }
   const validTicks = tick.filter(t => rets[t] && rets[t].length >= 24);
   const n = validTicks.length > 0 ? Math.min(...validTicks.map(t => rets[t].length)) : 0;
   for (const t of validTicks) rets[t] = rets[t].slice(-n);
-  function corr(a, b) {
-    const ma = a.reduce((x,y) => x+y, 0) / a.length, mb = b.reduce((x,y) => x+y, 0) / b.length;
+  function corr(a,b) {
+    const ma = a.reduce((x,y) => x+y, 0)/a.length, mb = b.reduce((x,y) => x+y, 0)/b.length;
     let num = 0, da = 0, db = 0;
-    for (let i = 0; i < a.length; i++) { num += (a[i]-ma)*(b[i]-mb); da += (a[i]-ma)**2; db += (b[i]-mb)**2; }
+    for (let i = 0; i < a.length; i++) { num += (a[i]-ma)*(b[i]-mb); da += (a[i]-ma)*(a[i]-ma); db += (b[i]-mb)*(b[i]-mb); }
     return num / Math.sqrt(da * db);
   }
   function cell(v) {
@@ -494,67 +508,43 @@ function renderCorrelations() {
     if (v >= -0.1) return "bg-gray-200";
     return "bg-blue-500 text-white";
   }
-  const short = t => (RAW.data[t]?.meta?.name || t).replace(/Index Fund|UCITS ETF|Fund|\(IE\)|EUR P Acc|Inst Acc EUR|D Acc EUR|Inv EUR Acc|EUR P|Acc EUR|Acc/gi,"").replace(/\s+/g," ").trim();
-  return '<h1 class="text-2xl font-bold mb-1">Correlaciones</h1><p class="text-sm text-gray-500 mb-6">Pearson Â· n = ' + n + ' meses</p>' +
+  return '<h1 class="text-2xl font-bold mb-1">Correlaciones</h1><p class="text-sm text-gray-500 mb-6">Pearson &middot; n = ' + n + ' meses</p>' +
     '<div class="bg-white rounded border p-4 overflow-x-auto"><table class="text-xs"><thead><tr><th></th>' +
-    validTicks.map(t => '<th class="px-1 py-1 font-normal" style="writing-mode:vertical-rl;height:110px;font-size:10px">' + short(t) + '</th>').join("") + '</tr></thead><tbody>' +
-    validTicks.map(a => '<tr><td class="px-2 py-1 text-xs whitespace-nowrap">' + short(a) + '</td>' +
-      validTicks.map(b => {
-        const v = corr(rets[a], rets[b]);
-        return '<td class="px-0.5 py-0.5"><div class="w-12 h-8 rounded flex items-center justify-center font-semibold ' + cell(v) + '">' + v.toFixed(2) + '</div></td>';
-      }).join("") + '</tr>').join("") + '</tbody></table></div>';
+    validTicks.map(t => '<th class="px-1 py-1 font-normal" style="writing-mode:vertical-rl;height:110px;font-size:10px">' + shortLabel(t) + '</th>').join("") + '</tr></thead><tbody>' +
+    validTicks.map(a => '<tr><td class="px-2 py-1 text-xs whitespace-nowrap">' + shortLabel(a) + '</td>' +
+      validTicks.map(b => { const v = corr(rets[a], rets[b]); return '<td class="px-0.5 py-0.5"><div class="w-12 h-8 rounded flex items-center justify-center font-semibold ' + cell(v) + '">' + v.toFixed(2) + '</div></td>'; }).join("") + '</tr>').join("") + '</tbody></table></div>';
 }
 
 function renderTax() {
-  const tr = [["0 â‚¬","6.000 â‚¬","19 %"],["6.000,01 â‚¬","50.000 â‚¬","21 %"],["50.000,01 â‚¬","200.000 â‚¬","23 %"],["200.000,01 â‚¬","300.000 â‚¬","27 %"],["300.000,01 â‚¬","Sin lÃ­mite","30 %"]];
-  return '<h1 class="text-2xl font-bold mb-1">Fiscalidad â€” IRPF 2026</h1>' +
-    '<p class="text-sm text-gray-500 mb-6">Base del ahorro Â· Territorio comÃºn Â· Fuente: BOE LIRPF art. 66 bis</p>' +
+  const tr = [["0 &euro;","6.000 &euro;","19 %"],["6.000,01 &euro;","50.000 &euro;","21 %"],["50.000,01 &euro;","200.000 &euro;","23 %"],["200.000,01 &euro;","300.000 &euro;","27 %"],["300.000,01 &euro;","Sin l&iacute;mite","30 %"]];
+  return '<h1 class="text-2xl font-bold mb-1">Fiscalidad &mdash; IRPF 2026</h1>' +
+    '<p class="text-sm text-gray-500 mb-6">Base del ahorro &middot; Territorio com&uacute;n &middot; Fuente: BOE LIRPF art. 66 bis</p>' +
     '<div class="bg-white rounded border p-4 mb-4"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Desde</th><th class="text-left px-3 py-2">Hasta</th><th class="text-left px-3 py-2">Tipo</th></tr></thead><tbody>' +
-    tr.map(t => '<tr class="border-t"><td class="px-3 py-2">' + t[0] + '</td><td class="px-3 py-2">' + t[1] + '</td><td class="px-3 py-2 font-semibold">' + t[2] + '</td></tr>').join("") +
-    '</tbody></table></div>' +
-    '<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">ExenciÃ³n por reinversiÃ³n (art. 94 LIRPF)</h3>' +
-    '<ul class="text-sm space-y-2 list-disc pl-5"><li>Aplica solo a IIC (fondos de inversiÃ³n), no a ETFs.</li><li>El traspaso entre fondos no tributa la plusvalÃ­a latente.</li><li>El nuevo fondo hereda el precio de adquisiciÃ³n del antiguo.</li><li>Los ETFs no se benefician de esta exenciÃ³n.</li></ul></div>' +
-    '<p class="text-xs text-gray-500 mt-4">Aviso: cÃ¡lculo orientativo. No sustituye al asesor ni al borrador de la AEAT.</p>';
+    tr.map(t => '<tr class="border-t"><td class="px-3 py-2">' + t[0] + '</td><td class="px-3 py-2">' + t[1] + '</td><td class="px-3 py-2 font-semibold">' + t[2] + '</td></tr>').join("") + '</tbody></table></div>' +
+    '<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Exenci&oacute;n por reinversi&oacute;n (art. 94 LIRPF)</h3>' +
+    '<ul class="text-sm space-y-2 list-disc pl-5"><li>Aplica solo a IIC (fondos de inversi&oacute;n), no a ETFs.</li><li>El traspaso entre fondos no tributa la plusval&iacute;a latente.</li><li>El nuevo fondo hereda el precio de adquisici&oacute;n del antiguo.</li><li>Los ETFs no se benefician de esta exenci&oacute;n.</li></ul></div>' +
+    '<p class="text-xs text-gray-500 mt-4">Aviso: c&aacute;lculo orientativo. No sustituye al asesor ni al borrador de la AEAT.</p>';
 }
 
 function renderCompare() {
-  const oldModel = CONFIG.model;
+  const old = CONFIG.model;
   const rows = [];
   for (const m of Object.keys(MODELS)) {
     CONFIG.model = m;
     const sig = computeSignals();
     if (sig.length < 2) { rows.push({ m, err: "sin datos" }); continue; }
     let eq = 1;
-    for (let i = 1; i < sig.length; i++) {
-      const prev = sig[i-1], curr = sig[i];
-      let ret = 0;
-      if (prev.multi) {
-        for (const [t, wt] of Object.entries(prev.weights || {})) {
-          const p0 = MONTHLY[t].close[prev.month_index], p1 = MONTHLY[t].close[curr.month_index];
-          if (p0 !== null && p1 !== null && p0) ret += wt * (p1/p0 - 1);
-        }
-      } else {
-        const a = prev.current ?? CASH;
-        const p0 = MONTHLY[a].close[prev.month_index], p1 = MONTHLY[a].close[curr.month_index];
-        ret = p0 !== null && p1 !== null && p0 ? (p1/p0 - 1) : 0;
-      }
-      eq *= (1 + ret);
-    }
-    const rets = [];
-    let prevV = 1;
-    for (let i = 1; i < sig.length; i++) {
-      // Recalculamos equity parcial para rets... simplificado:
-    }
-    const nMonths = sig.length - 1;
-    const cagr = Math.pow(eq, 12/nMonths) - 1;
-    rows.push({ m, name: MODELS[m].name, total: (eq-1)*100, cagr: cagr*100, months: nMonths });
+    for (let i = 1; i < sig.length; i++) eq *= (1 + computeEquity(sig[i-1], sig[i]));
+    const cagr = Math.pow(eq, 12/(sig.length-1)) - 1;
+    rows.push({ m, name: MODELS[m].name, total: (eq-1)*100, cagr: cagr*100, months: sig.length - 1 });
   }
-  CONFIG.model = oldModel;
+  CONFIG.model = old;
   return '<h1 class="text-2xl font-bold mb-1">Comparador de modelos</h1>' +
-    '<p class="text-sm text-gray-500 mb-6">Retorno total y CAGR de cada modelo con la configuraciÃ³n actual</p>' +
+    '<p class="text-sm text-gray-500 mb-6">Retorno total y CAGR de cada modelo con la configuraci&oacute;n actual</p>' +
     '<div class="bg-white rounded border p-4 overflow-x-auto"><table class="w-full text-sm">' +
     '<thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Modelo</th><th class="text-right px-3 py-2">Retorno total</th><th class="text-right px-3 py-2">CAGR</th><th class="text-right px-3 py-2">Meses</th></tr></thead><tbody>' +
-    rows.map(r => r.err ? '<tr class="border-t"><td class="px-3 py-2">' + r.m + '</td><td colspan="3" class="text-red-600 text-xs px-3 py-2">' + r.err + '</td></tr>'
+    rows.map(r => r.err
+      ? '<tr class="border-t"><td class="px-3 py-2">' + r.m + '</td><td colspan="3" class="text-red-600 text-xs px-3 py-2">' + r.err + '</td></tr>'
       : '<tr class="border-t ' + (r.m === CONFIG.model ? 'bg-indigo-50' : '') + '"><td class="px-3 py-2">' + r.name + '</td><td class="text-right px-3 py-2 font-mono">' + r.total.toFixed(2) + ' %</td><td class="text-right px-3 py-2 font-mono">' + r.cagr.toFixed(2) + ' %</td><td class="text-right px-3 py-2">' + r.months + '</td></tr>').join("") +
     '</tbody></table></div>';
 }
@@ -563,21 +553,17 @@ function renderDiag() {
   const cash = MONTHLY[CASH]; if (!cash) return "<p>Cash no cargado.</p>";
   const N = cash.close.length; const last = N - 1;
   const rows = RISK.map(t => {
-    const s = MONTHLY[t];
-    if (!s) return { t, err: "sin datos" };
-    const r12 = momentum(t, last, 12), r6 = momentum(t, last, 6), r3 = momentum(t, last, 3);
-    return { t, role: RAW.data[t]?.meta?.role || "", r12, r6, r3, len: s.close.length, first: s.dates[0], last: s.dates[s.dates.length-1] };
+    const s = MONTHLY[t]; if (!s) return { t, err: "sin datos" };
+    return { t, role: RAW.data[t]?.meta?.role || "", r12: momentum(t, last, 12), r6: momentum(t, last, 6), r3: momentum(t, last, 3), len: s.close.length, first: s.dates[0], last: s.dates[s.dates.length-1] };
   });
-  const c12 = momentum(CASH, last, 12), c6 = momentum(CASH, last, 6), c3 = momentum(CASH, last, 3);
-  const fmt = v => v === null ? "â€”" : (v * 100).toFixed(2) + " %";
-  const pd = (v, c) => v === null ? "â€”" : (v > c ? "âœ“" : "âœ—");
-  return '<h1 class="text-2xl font-bold mb-1">DiagnÃ³stico</h1>' +
-    '<p class="text-sm text-gray-500 mb-4">Ãšltimo mes: ' + cash.dates[last] + ' Â· NÂº meses: ' + N + '</p>' +
-    '<div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-sm"><strong>Cash (' + CASH + ')</strong> Â· R12: ' + fmt(c12) + ' Â· R6: ' + fmt(c6) + ' Â· R3: ' + fmt(c3) + '</div>' +
+  const fmt = v => v === null ? "-" : (v*100).toFixed(2) + " %";
+  return '<h1 class="text-2xl font-bold mb-1">Diagn&oacute;stico</h1>' +
+    '<p class="text-sm text-gray-500 mb-4">&Uacute;ltimo mes: ' + cash.dates[last] + ' &middot; N&uacute;mero de meses: ' + N + '</p>' +
+    '<div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-sm"><strong>Cash (' + CASH + ')</strong> &middot; R12: ' + fmt(momentum(CASH, last, 12)) + ' &middot; R6: ' + fmt(momentum(CASH, last, 6)) + ' &middot; R3: ' + fmt(momentum(CASH, last, 3)) + '</div>' +
     '<div class="bg-white rounded border p-4 overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-2 py-1">Ticker</th><th class="text-left px-2 py-1">Rol</th><th class="text-right px-2 py-1">R12</th><th class="text-right px-2 py-1">R6</th><th class="text-right px-2 py-1">R3</th><th class="text-right px-2 py-1">Meses</th><th class="text-right px-2 py-1">Rango</th></tr></thead><tbody>' +
     rows.map(r => r.err
       ? '<tr class="border-t bg-red-50"><td class="px-2 py-1 font-mono text-xs">' + r.t + '</td><td colspan="6" class="px-2 py-1 text-red-700">' + r.err + '</td></tr>'
-      : '<tr class="border-t"><td class="px-2 py-1 font-mono text-xs">' + r.t + '</td><td class="px-2 py-1 text-xs">' + r.role + '</td><td class="px-2 py-1 text-right font-mono">' + fmt(r.r12) + '</td><td class="px-2 py-1 text-right font-mono">' + fmt(r.r6) + '</td><td class="px-2 py-1 text-right font-mono">' + fmt(r.r3) + '</td><td class="px-2 py-1 text-right text-xs">' + r.len + '</td><td class="px-2 py-1 text-right text-xs">' + r.first + ' â†’ ' + r.last + '</td></tr>').join("") +
+      : '<tr class="border-t"><td class="px-2 py-1 font-mono text-xs">' + r.t + '</td><td class="px-2 py-1 text-xs">' + r.role + '</td><td class="px-2 py-1 text-right font-mono">' + fmt(r.r12) + '</td><td class="px-2 py-1 text-right font-mono">' + fmt(r.r6) + '</td><td class="px-2 py-1 text-right font-mono">' + fmt(r.r3) + '</td><td class="px-2 py-1 text-right text-xs">' + r.len + '</td><td class="px-2 py-1 text-right text-xs">' + r.first + ' &rarr; ' + r.last + '</td></tr>').join("") +
     '</tbody></table></div>';
 }
 
@@ -585,21 +571,89 @@ function renderData() {
   const e = Object.entries(RAW.data);
   return '<h1 class="text-2xl font-bold mb-1">Datos crudos</h1><p class="text-sm text-gray-500 mb-6">Fuente: ' + RAW.source + '</p>' +
     '<div class="bg-white rounded border p-4 overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Ticker</th><th class="text-left px-3 py-2">Nombre</th><th class="text-left px-3 py-2">Rol</th><th class="text-left px-3 py-2">ISIN</th><th class="text-right px-3 py-2">Filas</th><th class="text-right px-3 py-2">Rango</th></tr></thead><tbody>' +
-    e.map(([t, o]) => '<tr class="border-t"><td class="px-3 py-2 font-mono text-xs">' + t + '</td><td class="px-3 py-2">' + (o.meta?.name || "â€”") + '</td><td class="px-3 py-2">' + (o.meta?.role || "â€”") + '</td><td class="px-3 py-2 font-mono text-xs">' + (o.meta?.isin || "â€”") + '</td><td class="px-3 py-2 text-right">' + o.close.length + '</td><td class="px-3 py-2 text-right text-xs">' + o.dates[0] + ' â†’ ' + o.dates[o.dates.length-1] + '</td></tr>').join("") +
+    e.map(([t,o]) => '<tr class="border-t"><td class="px-3 py-2 font-mono text-xs">' + t + '</td><td class="px-3 py-2">' + (o.meta?.name || "-") + '</td><td class="px-3 py-2">' + (o.meta?.role || "-") + '</td><td class="px-3 py-2 font-mono text-xs">' + (o.meta?.isin || "-") + '</td><td class="px-3 py-2 text-right">' + o.close.length + '</td><td class="px-3 py-2 text-right text-xs">' + o.dates[0] + ' &rarr; ' + o.dates[o.dates.length-1] + '</td></tr>').join("") +
     '</tbody></table></div>';
 }
 
-const R = { signal: renderSignal, backtest: renderBacktest, allocation: renderAllocation, correlations: renderCorrelations, tax: renderTax, compare: renderCompare, diag: renderDiag, data: renderData };
+function renderTickerEditor() {
+  const rows = Object.entries(RAW.data).map(([t,o]) => ({ ticker: t, name: o.meta?.name || "", role: o.meta?.role || "", isin: o.meta?.isin || "" }));
+  return '<h1 class="text-2xl font-bold mb-1">Gestor de tickers</h1>' +
+    '<p class="text-sm text-gray-500 mb-4">Edita el universo de instrumentos. Copia el c&oacute;digo Python generado y p&eacute;galo en <code>fetch_data.py</code> en GitHub.</p>' +
+    '<div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-xs text-blue-900">' +
+    '<strong>C&oacute;mo se usa:</strong> 1) Edita la lista abajo. 2) Pulsa "Copiar c&oacute;digo Python". 3) Pulsa "Abrir fetch_data.py en GitHub". 4) Reemplaza el bloque TICKERS con lo copiado. 5) Commit. 6) Actions &rarr; Run workflow. 7) Refresca esta p&aacute;gina.' +
+    '</div>' +
+    '<div class="bg-white rounded border p-4 mb-4">' +
+    '<div class="flex items-center justify-between mb-3"><h3 class="font-semibold">Tickers actuales (' + rows.length + ')</h3>' +
+    '<button id="btnCopy" class="text-sm bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">Copiar c&oacute;digo Python</button></div>' +
+    '<table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-2 py-1">Ticker</th><th class="text-left px-2 py-1">Nombre</th><th class="text-left px-2 py-1">Rol</th><th class="text-left px-2 py-1">ISIN</th><th></th></tr></thead><tbody id="tickerRows">' +
+    rows.map((r,i) => '<tr class="border-t">' +
+      '<td class="px-2 py-1"><input data-f="ticker" value="' + r.ticker + '" class="border rounded px-1 py-0.5 text-xs font-mono w-40"></td>' +
+      '<td class="px-2 py-1"><input data-f="name" value="' + r.name.replace(/"/g,"&quot;") + '" class="border rounded px-1 py-0.5 text-xs w-64"></td>' +
+      '<td class="px-2 py-1"><input data-f="role" value="' + r.role + '" class="border rounded px-1 py-0.5 text-xs w-32"></td>' +
+      '<td class="px-2 py-1"><input data-f="isin" value="' + r.isin + '" class="border rounded px-1 py-0.5 text-xs font-mono w-32"></td>' +
+      '<td class="px-2 py-1"><button data-del="1" class="text-red-600 text-xs">Eliminar</button></td>' +
+      '</tr>').join("") +
+    '</tbody></table>' +
+    '<button id="btnAdd" class="mt-3 text-sm border rounded px-3 py-1 hover:bg-gray-50">+ A&ntilde;adir ticker</button>' +
+    '</div>' +
+    '<div class="bg-white rounded border p-4">' +
+    '<h3 class="font-semibold mb-2">C&oacute;digo Python generado</h3>' +
+    '<textarea id="pyOut" rows="12" class="w-full border rounded p-2 text-xs font-mono" readonly></textarea>' +
+    '<a href="https://github.com/Gusristic/Dual-Momentum-Deepseek/edit/main/scripts/fetch_data.py" target="_blank" class="inline-block mt-2 text-sm text-indigo-600 underline">Abrir fetch_data.py en GitHub</a>' +
+    '</div>';
+}
+
+const R = { signal: renderSignal, backtest: renderBacktest, allocation: renderAllocation, correlations: renderCorrelations, tax: renderTax, compare: renderCompare, diag: renderDiag, data: renderData, tickers: renderTickerEditor };
+
 function show(v) {
   if (!MONTHLY) return;
   main.innerHTML = R[v]();
   document.querySelectorAll("[data-nav]").forEach(el => el.classList.toggle("active", el.dataset.nav === v));
+  if (v === "tickers") {
+    setTimeout(() => {
+      if (document.getElementById("pyOut")) updatePy();
+      const addBtn = document.getElementById("btnAdd");
+      if (addBtn) addBtn.addEventListener("click", () => {
+        const tb = document.getElementById("tickerRows");
+        const tr = document.createElement("tr");
+        tr.className = "border-t";
+        tr.innerHTML = '<td class="px-2 py-1"><input data-f="ticker" class="border rounded px-1 py-0.5 text-xs font-mono w-40"></td>' +
+          '<td class="px-2 py-1"><input data-f="name" class="border rounded px-1 py-0.5 text-xs w-64"></td>' +
+          '<td class="px-2 py-1"><input data-f="role" class="border rounded px-1 py-0.5 text-xs w-32"></td>' +
+          '<td class="px-2 py-1"><input data-f="isin" class="border rounded px-1 py-0.5 text-xs font-mono w-32"></td>' +
+          '<td class="px-2 py-1"><button data-del="1" class="text-red-600 text-xs">Eliminar</button></td>';
+        tb.appendChild(tr);
+        updatePy();
+      });
+      const copyBtn = document.getElementById("btnCopy");
+      if (copyBtn) copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(document.getElementById("pyOut").value).then(() => {
+          copyBtn.textContent = "Copiado";
+          setTimeout(() => { copyBtn.textContent = "Copiar c\u00f3digo Python"; }, 1500);
+        });
+      });
+      document.getElementById("tickerRows").addEventListener("input", updatePy);
+      document.getElementById("tickerRows").addEventListener("click", e => {
+        if (e.target.dataset.del !== undefined) { e.target.closest("tr").remove(); updatePy(); }
+      });
+    }, 0);
+  }
+}
+function updatePy() {
+  const tb = document.getElementById("tickerRows"); if (!tb) return;
+  const rows = [...tb.children].map(tr => {
+    const ins = tr.querySelectorAll("input");
+    return { ticker: ins[0].value, name: ins[1].value, role: ins[2].value, isin: ins[3].value };
+  }).filter(r => r.ticker);
+  const py = "TICKERS = {\n" + rows.map(r =>
+    '    "' + r.ticker + '": {"name": "' + r.name.replace(/"/g,'\\"') + '", "role": "' + r.role + '", "isin": "' + r.isin + '"},'
+  ).join("\n") + "\n}";
+  const out = document.getElementById("pyOut"); if (out) out.value = py;
 }
 document.querySelectorAll("[data-nav]").forEach(el => el.addEventListener("click", () => show(el.dataset.nav)));
 
-// â”€â”€â”€ SELECTOR DE MODELO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const sel = document.getElementById("modelSelect");
-Object.entries(MODELS).forEach(([k, v]) => {
+Object.entries(MODELS).forEach(([k,v]) => {
   const opt = document.createElement("option");
   opt.value = k; opt.textContent = v.name;
   if (k === CONFIG.model) opt.selected = true;
@@ -607,73 +661,40 @@ Object.entries(MODELS).forEach(([k, v]) => {
 });
 sel.addEventListener("change", e => { CONFIG.model = e.target.value; saveConfig(); show("signal"); });
 
-// â”€â”€â”€ PANEL DE CONFIGURACIÃ“N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const drawer = document.getElementById("drawer"), backdrop = document.getElementById("backdrop"), body = document.getElementById("drawerBody");
 document.getElementById("btnConfig").addEventListener("click", openDrawer);
 document.getElementById("btnClose").addEventListener("click", closeDrawer);
 backdrop.addEventListener("click", closeDrawer);
 document.getElementById("btnSave").addEventListener("click", applyConfig);
 document.getElementById("btnReset").addEventListener("click", resetConfig);
-
-function openDrawer() {
-  renderDrawerBody();
-  drawer.classList.add("open");
-  backdrop.classList.remove("hidden");
-}
-function closeDrawer() {
-  drawer.classList.remove("open");
-  backdrop.classList.add("hidden");
-}
+function openDrawer() { renderDrawerBody(); drawer.classList.add("open"); backdrop.classList.remove("hidden"); }
+function closeDrawer() { drawer.classList.remove("open"); backdrop.classList.add("hidden"); }
 function renderDrawerBody() {
   const info = MODELS[CONFIG.model];
   const params = CONFIG.params[CONFIG.model] || {};
-  let html = '<div class="text-xs text-gray-500">' + info.desc + '</div>';
-  if (info.editable.length === 0) {
-    html += '<p class="text-sm text-gray-500 italic">Este modelo no tiene parÃ¡metros editables.</p>';
-  } else {
-    html += info.editable.map(p => '<div><label class="text-xs font-medium block mb-1">' + p.label + '</label>' +
-      '<input type="number" step="0.01" data-param="' + p.k + '" value="' + (params[p.k] ?? p.def) + '" class="w-full border rounded px-2 py-1 text-sm"></div>').join("");
-  }
-  // Rebalanceo (solo A, C, H)
-  if (["A","C","H"].includes(CONFIG.model)) {
-    html += '<div><label class="text-xs font-medium block mb-1">Frecuencia de rebalanceo</label>' +
-      '<select data-param="rebalance" class="w-full border rounded px-2 py-1 text-sm">' +
-      '<option value="monthly"' + (CONFIG.rebalance === "monthly" ? ' selected' : '') + '>Mensual</option>' +
-      '<option value="quarterly"' + (CONFIG.rebalance === "quarterly" ? ' selected' : '') + '>Trimestral</option>' +
-      '</select></div>';
-  }
-  // Filtro estricto (solo H)
+  let h = '<div class="text-xs text-gray-500">' + info.desc + '</div>';
+  if (info.editable.length === 0) h += '<p class="text-sm text-gray-500 italic">Este modelo no tiene par&aacute;metros editables.</p>';
+  else h += info.editable.map(p => '<div><label class="text-xs font-medium block mb-1">' + p.label + '</label><input type="number" step="0.01" data-param="' + p.k + '" value="' + (params[p.k] ?? p.def) + '" class="w-full border rounded px-2 py-1 text-sm"></div>').join("");
   if (CONFIG.model === "H") {
-    html += '<div><label class="text-xs font-medium block mb-1"><input type="checkbox" data-param="strict"' + (params.strict ? ' checked' : '') + '> Filtro absoluto estricto (todas las ventanas > cash)</label>' +
-      '<p class="text-xs text-gray-500">Si estÃ¡ desmarcado, solo se exige 12M > cash (criterio institucional).</p></div>';
+    h += '<div><label class="text-xs font-medium block mb-1"><input type="checkbox" data-param="strict"' + (params.strict ? ' checked' : '') + '> Filtro absoluto estricto (todas las ventanas &gt; cash)</label><p class="text-xs text-gray-500">Si est&aacute; desmarcado, solo se exige 12M &gt; cash.</p></div>';
   }
-  body.innerHTML = html;
+  body.innerHTML = h;
 }
 function applyConfig() {
-  const inputs = body.querySelectorAll("[data-param]");
   const newParams = {};
-  inputs.forEach(inp => {
+  body.querySelectorAll("[data-param]").forEach(inp => {
     const k = inp.dataset.param;
-    if (k === "rebalance") { CONFIG.rebalance = inp.value; return; }
-    if (inp.type === "checkbox") { newParams[k] = inp.checked; return; }
-    const v = parseFloat(inp.value);
-    newParams[k] = isNaN(v) ? inp.value : v;
+    if (inp.type === "checkbox") newParams[k] = inp.checked;
+    else { const v = parseFloat(inp.value); newParams[k] = isNaN(v) ? inp.value : v; }
   });
   CONFIG.params[CONFIG.model] = Object.assign({}, CONFIG.params[CONFIG.model] || {}, newParams);
-  saveConfig();
-  closeDrawer();
-  show("signal");
+  saveConfig(); closeDrawer(); show("signal");
 }
 function resetConfig() {
   CONFIG.params[CONFIG.model] = JSON.parse(JSON.stringify(DEFAULT_CONFIG.params[CONFIG.model] || {}));
-  CONFIG.rebalance = "monthly";
-  saveConfig();
-  renderDrawerBody();
-  show("signal");
+  saveConfig(); renderDrawerBody(); show("signal");
 }
-function saveConfig() {
-  try { localStorage.setItem("dm_config", JSON.stringify(CONFIG)); } catch(e) {}
-}
+function saveConfig() { try { localStorage.setItem("dm_config", JSON.stringify(CONFIG)); } catch(e) {} }
 
 loadData();
 </script>
