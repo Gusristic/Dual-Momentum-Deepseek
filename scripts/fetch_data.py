@@ -21,7 +21,7 @@ TICKERS = {
     "0P0001MRGW.F": {"name": "Nasdaq", "role": "Nasdaq", "isin": "ES0165265002"},
     "0P00000RQE.F": {"name": "Bonos Europes", "role": "Bonos europeos", "isin": "IE0007472990"},
     "0P0001A2G4.F": {"name": "Ninety One GSF Glb Gold ", "role": "Oro", "isin": "LU1578889864"},
-}}
+}
 
 # 📅 PARÁMETROS OPTIMIZADOS (Para cubrir desde enero 2019 a la actualidad de 2026 sin romper por falta de histórico)
 START_DATE = "2019-01-01"
