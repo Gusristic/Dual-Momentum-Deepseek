@@ -30,7 +30,7 @@
 </div>
 <script>
 const MODEL_H={w12:0.5,w6:0.3,w3:0.2,threshold:0.005,cashTicker:"XEON.DE"};
-const RISK=["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","0P00012I66.F"];,CASH="0P00000F24.F";let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
+const RISK=["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","0P00012I66.F"],CASH="0P00000F24.F";let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
 function buildAlignedMatrix(data){const allMonths=new Set();for(const obj of Object.values(data)){if(!obj.dates)continue;for(const d of obj.dates)allMonths.add(d.slice(0,7));}const months=[...allMonths].sort();const idxMap=new Map(months.map((m,i)=>[m,i]));const matrix={};for(const [ticker,obj] of Object.entries(data)){if(!obj.dates)continue;const row=new Array(months.length).fill(null);for(let k=0;k<obj.dates.length;k++){const m=obj.dates[k].slice(0,7);const idx=idxMap.get(m);if(idx!==undefined)row[idx]=obj.close[k];}matrix[ticker]={dates:months,close:row,meta:obj.meta};}return matrix;}
 async function loadData(){document.getElementById("meta").textContent="Cargando datos…";
 try{const r=await fetch("data/prices.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);
