@@ -72,9 +72,9 @@ const DEFAULT_CONFIG = {
 let CONFIG = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 try { const s = localStorage.getItem("dm_config"); if (s) CONFIG = Object.assign(CONFIG, JSON.parse(s)); } catch(e){}
 
-const CASH = "0P00000F24.F";
-const BENCHMARK = "IWDA.AS";
-const RISK = ["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","0P00012I66.F"];
+let CASH = "0P00000F24.F";
+let BENCHMARK = "IWDA.AS";
+let RISK = [];
 let RAW = null, MONTHLY = null;
 let currentView = "signal";
 const main = document.getElementById("main");
@@ -109,6 +109,12 @@ async function loadData(){
     if (!r.ok) throw new Error("HTTP " + r.status);
     RAW = await r.json();
     MONTHLY = buildAlignedMatrix(RAW.data);
+for (const [t, obj] of Object.entries(RAW.data)) {
+  const role = (obj.meta?.role || "").toLowerCase();
+  if (role === "cash") CASH = t;
+  else if (role === "benchmark") BENCHMARK = t;
+}
+RISK = Object.keys(RAW.data).filter(t => t !== CASH && t !== BENCHMARK);
     const w = RAW.generated_at ? new Date(RAW.generated_at).toLocaleString("es-ES") : "-";
     document.getElementById("meta").innerHTML = Object.keys(RAW.data).length + " instrumentos<br>Actualizado: " + w;
     show("signal");
