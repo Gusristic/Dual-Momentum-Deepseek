@@ -76,6 +76,7 @@ const CASH = "0P00000F24.F";
 const BENCHMARK = "IWDA.AS";
 const RISK = ["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","0P00012I66.F"];
 let RAW = null, MONTHLY = null;
+let currentView = "signal";
 const main = document.getElementById("main");
 let chartRef = null;
 
@@ -607,6 +608,7 @@ const R = { signal: renderSignal, backtest: renderBacktest, allocation: renderAl
 
 function show(v) {
   if (!MONTHLY) return;
+  currentView = v;
   main.innerHTML = R[v]();
   document.querySelectorAll("[data-nav]").forEach(el => el.classList.toggle("active", el.dataset.nav === v));
   if (v === "tickers") {
@@ -659,7 +661,7 @@ Object.entries(MODELS).forEach(([k,v]) => {
   if (k === CONFIG.model) opt.selected = true;
   sel.appendChild(opt);
 });
-sel.addEventListener("change", e => { CONFIG.model = e.target.value; saveConfig(); show("signal"); });
+sel.addEventListener("change", e => { CONFIG.model = e.target.value; saveConfig(); show(currentView); });
 
 const drawer = document.getElementById("drawer"), backdrop = document.getElementById("backdrop"), body = document.getElementById("drawerBody");
 document.getElementById("btnConfig").addEventListener("click", openDrawer);
@@ -688,11 +690,11 @@ function applyConfig() {
     else { const v = parseFloat(inp.value); newParams[k] = isNaN(v) ? inp.value : v; }
   });
   CONFIG.params[CONFIG.model] = Object.assign({}, CONFIG.params[CONFIG.model] || {}, newParams);
-  saveConfig(); closeDrawer(); show("signal");
+    saveConfig(); closeDrawer(); show(currentView);
 }
 function resetConfig() {
   CONFIG.params[CONFIG.model] = JSON.parse(JSON.stringify(DEFAULT_CONFIG.params[CONFIG.model] || {}));
-  saveConfig(); renderDrawerBody(); show("signal");
+    saveConfig(); renderDrawerBody(); show(currentView);
 }
 function saveConfig() { try { localStorage.setItem("dm_config", JSON.stringify(CONFIG)); } catch(e) {} }
 
