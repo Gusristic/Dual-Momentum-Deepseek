@@ -31,9 +31,10 @@
 <script>
 const MODEL_H={w12:0.5,w6:0.3,w3:0.2,threshold:0.005,cashTicker:"XEON.DE"};
 const RISK=["0P0001CLDM.F","0P0001CJGN.F","0P0001CLDI.F","0P0001AN9J.F","0P0001AINL.F","0P0000Y354.F","IE00B42W3S00.IR"],CASH="0P00000F24.F";let RAW=null,MONTHLY=null;const main=document.getElementById("main");let chartRef=null;
+function buildAlignedMatrix(data){const allMonths=new Set();for(const obj of Object.values(data)){if(!obj.dates)continue;for(const d of obj.dates)allMonths.add(d.slice(0,7));}const months=[...allMonths].sort();const idxMap=new Map(months.map((m,i)=>[m,i]));const matrix={};for(const [ticker,obj] of Object.entries(data)){if(!obj.dates)continue;const row=new Array(months.length).fill(null);for(let k=0;k<obj.dates.length;k++){const m=obj.dates[k].slice(0,7);const idx=idxMap.get(m);if(idx!==undefined)row[idx]=obj.close[k];}matrix[ticker]={dates:months,close:row,meta:obj.meta};}return matrix;}
 async function loadData(){document.getElementById("meta").textContent="Cargando datos…";
 try{const r=await fetch("data/prices.json",{cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);
-RAW=await r.json();MONTHLY=RAW.data;
+RAW=await r.json();MONTHLY=buildAlignedMatrix(RAW.data);
 const w=RAW.generated_at?new Date(RAW.generated_at).toLocaleString("es-ES"):"—";
 document.getElementById("meta").innerHTML=Object.keys(RAW.data).length+" instrumentos<br>Actualizado: "+w;
 show("signal");}catch(e){document.getElementById("meta").textContent="Error: "+e.message;
@@ -45,7 +46,7 @@ const cands=[];for(const t of RISK){const r12=momentum(t,i,12),r6=momentum(t,i,6
 const passes=r12>c12&&r6>c6&&r3>c3;const M=MODEL_H.w12*r12+MODEL_H.w6*r6+MODEL_H.w3*r3;cands.push({ticker:t,r12,r6,r3,M,passes});}
 const elig=cands.filter(c=>c.passes);let tgt=null;if(elig.length){elig.sort((a,b)=>b.M-a.M);tgt=elig[0].ticker;}
 let nc=cur;if(cur===null)nc=tgt;else if(tgt===null)nc=null;else if(tgt===cur)nc=cur;else{const cM=cands.find(c=>c.ticker===cur)?.M??-Infinity,tM=cands.find(c=>c.ticker===tgt)?.M??-Infinity;nc=(tM-cM>MODEL_H.threshold)?tgt:cur;}cur=nc;
-sig.push({date:cash.dates[i].slice(0,7),month_index:i,current:cur,candidates:cands,cashR12:c12,cashR6:c6,cashR3:c3});}return sig;}
+sig.push({date:cash.dates[i],month_index:i,current:cur,candidates:cands,cashR12:c12,cashR6:c6,cashR3:c3});}return sig;}
 function renderSignal(){const sig=computeSignals();if(!sig.length)return "<p>Datos insuficientes.</p>";const last=sig[sig.length-1];
 const label=t=>t===null?(RAW.data[CASH]?.meta?.name||"Cash"):(RAW.data[t]?.meta?.name||t);
 const wins=[["r12","12M",last.cashR12],["r6","6M",last.cashR6],["r3","3M",last.cashR3]].map(([k,l,cr])=>{const top=last.candidates.find(c=>c.ticker===last.current)||last.candidates[0];if(!top)return null;return {w:l,a:top[k],c:cr,p:top[k]>cr};}).filter(Boolean);
