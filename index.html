@@ -19,6 +19,7 @@
       <button data-nav="correlations" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">🔲 Correlaciones</button>
       <button data-nav="tax" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">🏛️ Fiscalidad</button>
       <button data-nav="data" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">💾 Datos</button>
+	<button data-nav="diag" class="nav w-full text-left rounded px-3 py-2 text-sm hover:bg-gray-100">🔬 Diagnóstico</button>
     </nav>
     <div id="meta" class="p-3 border-t text-xs text-gray-500">Cargando…</div>
   </aside>
@@ -85,11 +86,36 @@ return '<h1 class="text-2xl font-bold mb-1">Fiscalidad — IRPF 2026</h1><p clas
 tr.map(t=>'<tr class="border-t"><td class="px-3 py-2">'+t[0]+'</td><td class="px-3 py-2">'+t[1]+'</td><td class="px-3 py-2 font-semibold">'+t[2]+'</td></tr>').join("")+'</tbody></table></div>'+
 '<div class="bg-white rounded border p-4"><h3 class="font-semibold mb-3">Exención por reinversión (art. 94 LIRPF)</h3><ul class="text-sm space-y-2 list-disc pl-5"><li>Aplica solo a <strong>IIC (fondos de inversión)</strong>, no a ETFs.</li><li>El traspaso entre fondos no tributa la plusvalía latente.</li><li>El nuevo fondo hereda el precio de adquisición del antiguo.</li><li>Los ETFs <strong>no</strong> se benefician de esta exención.</li></ul></div>'+
 '<p class="text-xs text-gray-500 mt-4">Aviso: cálculo orientativo. No sustituye al asesor ni al borrador de la AEAT.</p>';}
+function renderDiag(){const cash=MONTHLY[CASH];if(!cash)return "<p>Cash no cargado.</p>";
+const N=cash.close.length;const last=N-1;
+const rows=RISK.map(t=>{const s=MONTHLY[t];
+if(!s)return {t,err:"sin datos"};
+const r12=momentum(t,last,12),r6=momentum(t,last,6),r3=momentum(t,last,3);
+return {t,role:RAW.data[t]?.meta?.role||"",name:RAW.data[t]?.meta?.name||t,r12,r6,r3,
+len:s.close.length,firstDate:s.dates[0],lastDate:s.dates[s.dates.length-1]};});
+const c12=momentum(CASH,last,12),c6=momentum(CASH,last,6),c3=momentum(CASH,last,3);
+const fmt=v=>v===null?"—":(v*100).toFixed(2)+" %";
+const pd=(v,c)=>v===null?"—":(v>c?"✓":"✗");
+return '<h1 class="text-2xl font-bold mb-1">Diagnóstico</h1>'+
+'<p class="text-sm text-gray-500 mb-4">Último mes cargado: '+cash.dates[last]+' · Nº meses: '+N+'</p>'+
+'<div class="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-sm">'+
+'<strong>Cash ('+CASH+')</strong> · R12: '+fmt(c12)+' · R6: '+fmt(c6)+' · R3: '+fmt(c3)+
+'<br><span class="text-xs text-gray-600">Estos son los valores que deben superar los fondos.</span></div>'+
+'<div class="bg-white rounded border p-4 overflow-x-auto"><table class="w-full text-sm">'+
+'<thead class="bg-gray-50"><tr><th class="text-left px-2 py-1">Ticker</th><th class="text-left px-2 py-1">Rol</th><th class="text-right px-2 py-1">R12</th><th class="text-right px-2 py-1">vs cash</th><th class="text-right px-2 py-1">R6</th><th class="text-right px-2 py-1">vs cash</th><th class="text-right px-2 py-1">R3</th><th class="text-right px-2 py-1">vs cash</th><th class="text-right px-2 py-1">Meses</th><th class="text-right px-2 py-1">Rango</th></tr></thead><tbody>'+
+rows.map(r=>{if(r.err)return '<tr class="border-t bg-red-50"><td class="px-2 py-1 font-mono text-xs">'+r.t+'</td><td colspan="9" class="px-2 py-1 text-red-700">'+r.err+'</td></tr>';
+return '<tr class="border-t"><td class="px-2 py-1 font-mono text-xs">'+r.t+'</td><td class="px-2 py-1 text-xs">'+r.role+'</td>'+
+'<td class="px-2 py-1 text-right font-mono">'+fmt(r.r12)+'</td><td class="px-2 py-1 text-right '+(r.r12>c12?'text-green-700':'text-red-600')+'">'+pd(r.r12,c12)+'</td>'+
+'<td class="px-2 py-1 text-right font-mono">'+fmt(r.r6)+'</td><td class="px-2 py-1 text-right '+(r.r6>c6?'text-green-700':'text-red-600')+'">'+pd(r.r6,c6)+'</td>'+
+'<td class="px-2 py-1 text-right font-mono">'+fmt(r.r3)+'</td><td class="px-2 py-1 text-right '+(r.r3>c3?'text-green-700':'text-red-600')+'">'+pd(r.r3,c3)+'</td>'+
+'<td class="px-2 py-1 text-right text-xs">'+r.len+'</td><td class="px-2 py-1 text-right text-xs">'+r.firstDate+' → '+r.lastDate+'</td></tr>';}).join("")+
+'</tbody></table></div>';
+}
 function renderData(){const e=Object.entries(RAW.data);
 return '<h1 class="text-2xl font-bold mb-1">Datos crudos</h1><p class="text-sm text-gray-500 mb-6">Generados por GitHub Actions · Fuente: '+RAW.source+'</p>'+
 '<div class="bg-white rounded border p-4 overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50"><tr><th class="text-left px-3 py-2">Ticker</th><th class="text-left px-3 py-2">Nombre</th><th class="text-left px-3 py-2">Rol</th><th class="text-left px-3 py-2">ISIN</th><th class="text-right px-3 py-2">Filas</th><th class="text-right px-3 py-2">Rango</th></tr></thead><tbody>'+
 e.map(([t,o])=>'<tr class="border-t"><td class="px-3 py-2 font-mono">'+t+'</td><td class="px-3 py-2">'+(o.meta?.name||"—")+'</td><td class="px-3 py-2">'+(o.meta?.role||"—")+'</td><td class="px-3 py-2 font-mono text-xs">'+(o.meta?.isin||"—")+'</td><td class="px-3 py-2 text-right">'+o.close.length+'</td><td class="px-3 py-2 text-right text-xs">'+o.dates[0]+' → '+o.dates[o.dates.length-1]+'</td></tr>').join("")+'</tbody></table></div>';}
-const R={signal:renderSignal,backtest:renderBacktest,allocation:renderAllocation,correlations:renderCorrelations,tax:renderTax,data:renderData};
+const R={signal:renderSignal,backtest:renderBacktest,allocation:renderAllocation,correlations:renderCorrelations,tax:renderTax,data:renderData,diag:renderDiag};
 function show(v){if(!MONTHLY)return;main.innerHTML=R[v]();document.querySelectorAll("[data-nav]").forEach(el=>el.classList.toggle("active",el.dataset.nav===v));}
 document.querySelectorAll("[data-nav]").forEach(el=>el.addEventListener("click",()=>show(el.dataset.nav)));
 loadData();
